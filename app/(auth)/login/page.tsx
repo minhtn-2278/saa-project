@@ -2,9 +2,9 @@ import { Suspense } from "react";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Header } from "@/components/login/Header";
+import { AppHeader } from "@/components/shared/AppHeader";
 import { HeroSection } from "@/components/login/HeroSection";
-import { Footer } from "@/components/login/Footer";
+import { AppFooter } from "@/components/shared/AppFooter";
 
 export default async function LoginPage() {
   const supabase = await createClient();
@@ -51,7 +51,7 @@ export default async function LoginPage() {
 
       {/* Layer 4: Content */}
       <div className="relative z-10 flex flex-col min-h-screen w-full">
-        <Header />
+        <AppHeader showNav={false} />
 
         <main className="flex-1 flex flex-col max-w-[1440px] mx-auto w-full">
           <Suspense>
@@ -59,7 +59,7 @@ export default async function LoginPage() {
           </Suspense>
         </main>
 
-        <Footer />
+        <AppFooter />
       </div>
 
       <noscript>

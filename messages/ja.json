@@ -1,4 +1,12 @@
 {
+  "nav": {
+    "aboutSAA": "SAA 2025について",
+    "awardsInfo": "受賞情報",
+    "sunKudos": "Sun* Kudos",
+    "rules": "コミュニティ基準",
+    "profile": "プロフィール",
+    "signOut": "サインアウト"
+  },
   "login": {
     "hero": {
       "description": "SAA 2025の旅を始めましょう。\nログインして探検しよう！"
@@ -18,5 +26,53 @@
     "title": "アクセスが拒否されました",
     "message": "Sun*のアカウントのみがこのアプリケーションにアクセスできます。",
     "backToLogin": "ログインに戻る"
+  },
+  "homepage": {
+    "hero": {
+      "comingSoon": "Coming soon"
+    },
+    "countdown": {
+      "days": "DAYS",
+      "hours": "HOURS",
+      "minutes": "MINUTES"
+    },
+    "eventInfo": {
+      "timeLabel": "Time:",
+      "timeValue": "26/12/2025",
+      "venueLabel": "Venue:",
+      "venueValue": "Âu Cơ Art Center",
+      "livestream": "Live broadcast via Livestream"
+    },
+    "cta": {
+      "aboutAwards": "ABOUT AWARDS",
+      "aboutKudos": "ABOUT KUDOS"
+    },
+    "rootFurther": {
+      "intro": "AI時代の嵐のような変化とクライアントからの高まる要求に直面し、Sun*は能力の多様化戦略を選択しました。自分の分野でエリートになるだけでなく、すべてのSunnerが「problem-solver」となる、より高い目標を目指しています。\nAI時代における多様な能力、柔軟な発展、深く掘り下げる精神に触発され、「Root Further」がSun* Annual Awards 2025の公式テーマとして選ばれました。\n表面的な意味を超えて、「Root Further」は私たちがさらに遠くへ伸び、より深く根を張り、隠された「地層」に触れ続ける旅を表しています。",
+      "quote": "\"A tree with deep roots fears no storm\"",
+      "quoteAttribution": "(英語のことわざ)",
+      "conclusion": "嵐の前に、十分に強い根を持つ木だけが立ち続けることができます。多様な能力に自信を持ち、挑戦を受け入れ、変化をリードする個人を持つ組織こそが、激動の中でも揺るがず、あらゆる利点を活かして時代の課題を克服できる組織です。\n「Root Further」が根付いた精神となったとき、私たちは恐れることなく、むしろ前進する旅のどんな未知の領域にもワクワクするでしょう。なぜなら、その無限の地平線の中に、素晴らしい驚きと機会が待っていると信じているからです。"
+    },
+    "awards": {
+      "sectionLabel": "Sun* annual awards 2025",
+      "title": "受賞システム",
+      "detail": "詳細",
+      "topTalent": { "name": "Top Talent", "description": "あらゆる面で優秀なトップ個人を表彰" },
+      "topProject": { "name": "Top Project", "description": "優れた収益を持つ優秀プロジェクトを表彰" },
+      "topProjectLeader": { "name": "Top Project Leader", "description": "インスピレーションを与えプロジェクトの飛躍を導くリーダーを表彰" },
+      "bestManager": { "name": "Best Manager", "description": "優れたマネジメント能力でチームを導くマネージャーを表彰" },
+      "signature2025": { "name": "Signature 2025 - Creator", "description": "2025年の最もクリエイティブな個人を表彰" },
+      "mvp": { "name": "MVP (Most Valuable Person)", "description": "最も価値ある貢献者を表彰" }
+    },
+    "kudos": {
+      "label": "認知ムーブメント",
+      "title": "Sun* Kudos",
+      "description": "SAA 2025の新機能\n同僚への感謝と認識の活動 — すべてのSunnerを対象に初めて開催。2025年11月に展開され、Sun*メンバーが主催者のシステムを通じて同僚への感謝の言葉を共有することを奨励します。これは受賞者選考時のHeads Councilの参考資料となります。",
+      "detail": "詳細"
+    },
+    "fab": {
+      "writeKudo": "Kudo作成",
+      "rules": "規則"
+    }
   }
 }

@@ -45,3 +45,10 @@ next-env.d.ts
 mcp.json
 
 /.playwright-mcp/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+tests/e2e/.auth/
+.playwright-mcp/

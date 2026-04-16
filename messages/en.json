@@ -1,4 +1,12 @@
 {
+  "nav": {
+    "aboutSAA": "About SAA 2025",
+    "awardsInfo": "Awards Information",
+    "sunKudos": "Sun* Kudos",
+    "rules": "Community Standards",
+    "profile": "Profile",
+    "signOut": "Sign out"
+  },
   "login": {
     "hero": {
       "description": "Start your journey with SAA 2025.\nLog in to explore!"
@@ -18,5 +26,53 @@
     "title": "Access Denied",
     "message": "Only Sun* accounts are authorized to access this application.",
     "backToLogin": "Back to Login"
+  },
+  "homepage": {
+    "hero": {
+      "comingSoon": "Coming soon"
+    },
+    "countdown": {
+      "days": "DAYS",
+      "hours": "HOURS",
+      "minutes": "MINUTES"
+    },
+    "eventInfo": {
+      "timeLabel": "Time:",
+      "timeValue": "26/12/2025",
+      "venueLabel": "Venue:",
+      "venueValue": "Âu Cơ Art Center",
+      "livestream": "Live broadcast via Livestream"
+    },
+    "cta": {
+      "aboutAwards": "ABOUT AWARDS",
+      "aboutKudos": "ABOUT KUDOS"
+    },
+    "rootFurther": {
+      "intro": "Facing the storm-like changes of the AI era and ever-increasing demands from clients, Sun* has chosen a strategy of diversifying capabilities — not just striving to be an elite in its field, but aiming higher, where every Sunner is a \"problem-solver\" — an expert in tackling any challenge, finding solutions for every project, client, and society.\nInspired by diverse capabilities, flexible development, and the spirit of digging deep to break through in the AI era, \"Root Further\" was chosen as the official theme of the Sun* Annual Awards 2025.\nBeyond its surface meaning, \"Root Further\" represents our journey of constantly reaching further, rooting deeper, touching the hidden \"geological layers\" to continue existing, rising, and nurturing the passion for value creation that burns bright in every Sun* member.",
+      "quote": "\"A tree with deep roots fears no storm\"",
+      "quoteAttribution": "(English Proverb)",
+      "conclusion": "Before the storm, only trees with strong enough roots can stand firm. An organization with individuals who are confident in their diverse capabilities, ready to create and embrace challenges, and take charge of change — that is an organization that not only stands firm through turbulence but also leverages every advantage to conquer the challenges of our time.\nNo one knows what hidden \"geological layers\" lie deep within the technology industry and modern markets. What we do know is that when \"Root Further\" becomes our rooted spirit, we will not fear — instead, we will feel excited about any uncharted territory on the journey ahead. Because we always believe that within those infinite horizons, extraordinary wonders and opportunities await us."
+    },
+    "awards": {
+      "sectionLabel": "Sun* annual awards 2025",
+      "title": "Award System",
+      "detail": "Details",
+      "topTalent": { "name": "Top Talent", "description": "Honoring top outstanding individuals in every aspect" },
+      "topProject": { "name": "Top Project", "description": "Honoring outstanding projects with notable revenue" },
+      "topProjectLeader": { "name": "Top Project Leader", "description": "Honoring inspiring leaders driving project breakthroughs" },
+      "bestManager": { "name": "Best Manager", "description": "Honoring managers with excellent leadership and team guidance" },
+      "signature2025": { "name": "Signature 2025 - Creator", "description": "Honoring the most creative individual of 2025" },
+      "mvp": { "name": "MVP (Most Valuable Person)", "description": "Honoring the most valuable contributor" }
+    },
+    "kudos": {
+      "label": "Recognition Movement",
+      "title": "Sun* Kudos",
+      "description": "NEW IN SAA 2025\nThe activity of recognizing and thanking colleagues — held for the first time for all Sunners. Deployed in November 2025, encouraging Sun* members to share recognition and thanks through the organizer's system. This will serve as material for the Heads Council when selecting award recipients.",
+      "detail": "Details"
+    },
+    "fab": {
+      "writeKudo": "Write Kudo",
+      "rules": "Rules"
+    }
   }
 }
