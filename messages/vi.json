@@ -1,0 +1,22 @@
+{
+  "login": {
+    "hero": {
+      "description": "Bắt đầu hành trình của bạn cùng SAA 2025.\nĐăng nhập để khám phá!"
+    },
+    "button": {
+      "text": "LOGIN With Google"
+    },
+    "footer": {
+      "copyright": "Bản quyền thuộc về Sun* © 2025"
+    },
+    "error": {
+      "authFailed": "Đăng nhập thất bại. Vui lòng thử lại.",
+      "sessionExpired": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+    }
+  },
+  "error403": {
+    "title": "Truy cập bị từ chối",
+    "message": "Chỉ tài khoản Sun* mới được phép truy cập ứng dụng này.",
+    "backToLogin": "Quay lại đăng nhập"
+  }
+}

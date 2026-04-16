@@ -43,3 +43,5 @@ next-env.d.ts
 # Added by MoMorph
 .mcp.json
 mcp.json
+
+/.playwright-mcp/

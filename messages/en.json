@@ -1,0 +1,22 @@
+{
+  "login": {
+    "hero": {
+      "description": "Start your journey with SAA 2025.\nLog in to explore!"
+    },
+    "button": {
+      "text": "LOGIN With Google"
+    },
+    "footer": {
+      "copyright": "Copyright belongs to Sun* © 2025"
+    },
+    "error": {
+      "authFailed": "Login failed. Please try again.",
+      "sessionExpired": "Your session has expired. Please log in again."
+    }
+  },
+  "error403": {
+    "title": "Access Denied",
+    "message": "Only Sun* accounts are authorized to access this application.",
+    "backToLogin": "Back to Login"
+  }
+}

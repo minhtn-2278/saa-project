@@ -1,0 +1,22 @@
+{
+  "login": {
+    "hero": {
+      "description": "SAA 2025の旅を始めましょう。\nログインして探検しよう！"
+    },
+    "button": {
+      "text": "LOGIN With Google"
+    },
+    "footer": {
+      "copyright": "著作権はSun*に帰属します © 2025"
+    },
+    "error": {
+      "authFailed": "ログインに失敗しました。もう一度お試しください。",
+      "sessionExpired": "セッションの有効期限が切れました。再度ログインしてください。"
+    }
+  },
+  "error403": {
+    "title": "アクセスが拒否されました",
+    "message": "Sun*のアカウントのみがこのアプリケーションにアクセスできます。",
+    "backToLogin": "ログインに戻る"
+  }
+}
