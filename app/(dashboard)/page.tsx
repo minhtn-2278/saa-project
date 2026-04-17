@@ -7,7 +7,6 @@ import { RootFurtherIntro } from "@/components/homepage/RootFurtherIntro";
 import { RootFurtherContent } from "@/components/homepage/RootFurtherContent";
 import { AwardsGrid } from "@/components/homepage/AwardsGrid";
 import { KudosPromoBlock } from "@/components/homepage/KudosPromoBlock";
-import { FloatingActionButton } from "@/components/homepage/FloatingActionButton";
 
 export default async function HomepageSAA() {
   const supabase = await createClient();
@@ -56,8 +55,6 @@ export default async function HomepageSAA() {
         <AwardsGrid />
         <KudosPromoBlock />
       </div>
-
-      <FloatingActionButton />
 
       <noscript>
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#00101A] text-white p-8 text-center">

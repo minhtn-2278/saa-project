@@ -1,5 +1,6 @@
 import { AppHeader } from "@/components/shared/AppHeader";
 import { AppFooter } from "@/components/shared/AppFooter";
+import { FloatingActionButton } from "@/components/shared/FloatingActionButton";
 
 export default function DashboardLayout({
   children,
@@ -13,6 +14,7 @@ export default function DashboardLayout({
         {children}
       </main>
       <AppFooter />
+      <FloatingActionButton />
     </div>
   );
 }

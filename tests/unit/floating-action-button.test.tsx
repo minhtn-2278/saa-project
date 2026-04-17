@@ -28,7 +28,7 @@ vi.mock("next/link", () => ({
 }));
 
 const { FloatingActionButton } = await import(
-  "@/components/homepage/FloatingActionButton"
+  "@/components/shared/FloatingActionButton"
 );
 
 describe("FloatingActionButton", () => {
