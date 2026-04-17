@@ -57,12 +57,30 @@
       "sectionLabel": "Sun* annual awards 2025",
       "title": "受賞システム",
       "detail": "詳細",
-      "topTalent": { "name": "Top Talent", "description": "あらゆる面で優秀なトップ個人を表彰" },
-      "topProject": { "name": "Top Project", "description": "優れた収益を持つ優秀プロジェクトを表彰" },
-      "topProjectLeader": { "name": "Top Project Leader", "description": "インスピレーションを与えプロジェクトの飛躍を導くリーダーを表彰" },
-      "bestManager": { "name": "Best Manager", "description": "優れたマネジメント能力でチームを導くマネージャーを表彰" },
-      "signature2025": { "name": "Signature 2025 - Creator", "description": "2025年の最もクリエイティブな個人を表彰" },
-      "mvp": { "name": "MVP (Most Valuable Person)", "description": "最も価値ある貢献者を表彰" }
+      "topTalent": {
+        "name": "Top Talent",
+        "description": "あらゆる面で優秀なトップ個人を表彰"
+      },
+      "topProject": {
+        "name": "Top Project",
+        "description": "優れた収益を持つ優秀プロジェクトを表彰"
+      },
+      "topProjectLeader": {
+        "name": "Top Project Leader",
+        "description": "インスピレーションを与えプロジェクトの飛躍を導くリーダーを表彰"
+      },
+      "bestManager": {
+        "name": "Best Manager",
+        "description": "優れたマネジメント能力でチームを導くマネージャーを表彰"
+      },
+      "signature2025": {
+        "name": "Signature 2025 - Creator",
+        "description": "2025年の最もクリエイティブな個人を表彰"
+      },
+      "mvp": {
+        "name": "MVP (Most Valuable Person)",
+        "description": "最も価値ある貢献者を表彰"
+      }
     },
     "kudos": {
       "label": "認知ムーブメント",
@@ -119,5 +137,9 @@
       "description": "SAA 2025 の新機能\n同僚への感謝と認識の活動 — すべての Sunner を対象に初めて開催。2025年11月に展開され、Sun* メンバーが主催者のシステムを通じて同僚への感謝の言葉を共有することを奨励します。",
       "cta": "詳細"
     }
+  },
+  "prelaunch": {
+    "title": "イベント開始まで",
+    "srSummary": "残り {days}日 {hours}時間 {minutes}分"
   }
 }

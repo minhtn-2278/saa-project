@@ -57,12 +57,30 @@
       "sectionLabel": "Sun* annual awards 2025",
       "title": "Hệ thống giải thưởng",
       "detail": "Chi tiết",
-      "topTalent": { "name": "Top Talent", "description": "Vinh danh top cá nhân xuất sắc trên mọi phương diện" },
-      "topProject": { "name": "Top Project", "description": "Vinh danh dự án xuất sắc trên mọi phương diện, dự án có doanh thu nổi bật" },
-      "topProjectLeader": { "name": "Top Project Leader", "description": "Vinh danh người quản lý truyền cảm hứng và dẫn dắt dự án bứt phá" },
-      "bestManager": { "name": "Best Manager", "description": "Vinh danh người quản lý có năng lực quản lý tốt, dẫn dắt đội nhóm" },
-      "signature2025": { "name": "Signature 2025 - Creator", "description": "Vinh danh cá nhân sáng tạo đặc biệt của năm 2025" },
-      "mvp": { "name": "MVP (Most Valuable Person)", "description": "Vinh danh cá nhân có đóng góp giá trị nhất" }
+      "topTalent": {
+        "name": "Top Talent",
+        "description": "Vinh danh top cá nhân xuất sắc trên mọi phương diện"
+      },
+      "topProject": {
+        "name": "Top Project",
+        "description": "Vinh danh dự án xuất sắc trên mọi phương diện, dự án có doanh thu nổi bật"
+      },
+      "topProjectLeader": {
+        "name": "Top Project Leader",
+        "description": "Vinh danh người quản lý truyền cảm hứng và dẫn dắt dự án bứt phá"
+      },
+      "bestManager": {
+        "name": "Best Manager",
+        "description": "Vinh danh người quản lý có năng lực quản lý tốt, dẫn dắt đội nhóm"
+      },
+      "signature2025": {
+        "name": "Signature 2025 - Creator",
+        "description": "Vinh danh cá nhân sáng tạo đặc biệt của năm 2025"
+      },
+      "mvp": {
+        "name": "MVP (Most Valuable Person)",
+        "description": "Vinh danh cá nhân có đóng góp giá trị nhất"
+      }
     },
     "kudos": {
       "label": "Phong trào ghi nhận",
@@ -119,5 +137,9 @@
       "description": "ĐIỂM MỚI CỦA SAA 2025\nHoạt động ghi nhận và cảm ơn đồng nghiệp - lần đầu tiên được diễn ra dành cho tất cả Sunner. Hoạt động sẽ được triển khai vào tháng 11/2025, khuyến khích người Sun* chia sẻ những lời ghi nhận, cảm ơn đồng nghiệp trên hệ thống do BTC công bố.",
       "cta": "Chi tiết"
     }
+  },
+  "prelaunch": {
+    "title": "Sự kiện sẽ bắt đầu sau",
+    "srSummary": "Còn lại {days} ngày, {hours} giờ, {minutes} phút"
   }
 }

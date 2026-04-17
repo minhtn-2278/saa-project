@@ -11,3 +11,7 @@ export const PUBLIC_ROUTES = [
   "/api/auth/callback",
   "/error/403",
 ] as const;
+
+export const PRELAUNCH_COUNTDOWN_ROUTE = "/countdown";
+export const PRELAUNCH_BYPASS_COOKIE = "prelaunch_bypass";
+export const PRELAUNCH_BYPASS_HEADER = "x-prelaunch-bypass";

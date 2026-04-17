@@ -23,6 +23,9 @@
   --color-error: #EF4444;
   --color-focus-ring: #FFEA9E;
   --color-lang-hover: rgba(255, 255, 255, 0.1);
+
+  /* Prelaunch countdown — semantic alias for the LED cell border */
+  --color-accent-gold: #FFEA9E;
 }
 
 @layer utilities {

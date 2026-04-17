@@ -28,7 +28,7 @@
 | # | Screen Name | Frame ID | Figma Link | Status | Predicted APIs | Navigations To |
 |---|-------------|----------|------------|--------|----------------|----------------|
 | 1 | Login | GzbNeVGJHz | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=GzbNeVGJHz) | discovered | POST /auth/google | Homepage SAA, Dropdown-ngon ngu |
-| 2 | Countdown - Prelaunch page | 8PJQswPZmU | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=8PJQswPZmU) | discovered | GET /event/status | Homepage SAA (after countdown) |
+| 2 | Countdown - Prelaunch page (GATEKEEPER) | 8PJQswPZmU | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=8PJQswPZmU) | discovered (spec'd) | GET /event/status (optional) | Login / Homepage SAA (auto-redirect after `LAUNCH_DATE` in .env) - precedes ALL screens while `now < LAUNCH_DATE` |
 | 3 | Homepage SAA | i87tDx10uM | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=i87tDx10uM) | discovered | GET /home, GET /awards, GET /kudos/recent | He thong giai, Sun*Kudos Live board, Profile, Notifications, The le, Open secret box, Viet Kudo |
 | 4 | He thong giai (Award System) | zFYDgyj_pD | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=zFYDgyj_pD) | discovered (spec'd) | GET /awards, GET /awards/:id, GET /users/me, GET /notifications | Homepage SAA, Sun*Kudos Live board, The le, Dropdown-ngon ngu, Notification dropdown, Dropdown-profile |
 | 5 | Sun* Kudos - Live board | MaZUn5xHXZ | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=MaZUn5xHXZ) | discovered | GET /kudos, GET /kudos/filter | Viet Kudo, View Kudo, Profile nguoi khac, Dropdown Hashtag filter, Dropdown Phong ban |
@@ -123,8 +123,8 @@ flowchart TD
         LangDropdown["Dropdown-ngon ngu<br/>(hUyaaugye2)"]
     end
 
-    subgraph PreLaunch["Pre-Launch"]
-        Countdown["Countdown - Prelaunch<br/>(8PJQswPZmU)"]
+    subgraph PreLaunch["Pre-Launch (Gatekeeper - precedes ALL screens while now < LAUNCH_DATE in .env)"]
+        Countdown["Countdown - Prelaunch<br/>(8PJQswPZmU)<br/>[GATEKEEPER]"]
     end
 
     subgraph Main["Main Application"]
@@ -165,7 +165,13 @@ flowchart TD
     Login -->|"Language selector"| LangDropdown
     LangDropdown -->|"Select language"| Login
 
-    Countdown -->|"After countdown ends"| Homepage
+    %% Pre-entry gate: Countdown intercepts ALL incoming routes before launch
+    Countdown -.->|"middleware gate<br/>before launch: rewrite to /countdown"| Login
+    Countdown -.->|"middleware gate<br/>before launch: rewrite to /countdown"| Homepage
+    Countdown -.->|"middleware gate<br/>before launch: rewrite to /countdown"| Awards
+    Countdown -.->|"middleware gate<br/>before launch: rewrite to /countdown"| KudosBoard
+    Countdown -->|"After LAUNCH_DATE (unauthenticated)"| Login
+    Countdown -->|"After LAUNCH_DATE (authenticated)"| Homepage
 
     Homepage --> Awards
     Homepage --> KudosBoard
@@ -268,10 +274,16 @@ flowchart TD
 | Dropdown-profile (z4sCl3_Qtk) | User profile menu with logout | Header avatar click |
 | Dropdown-profile Admin (54rekaCHG1) | Admin profile menu with admin panel link | Header avatar click (admin users) |
 
-### Group: Pre-Launch
+### Group: Pre-Launch (Gatekeeper)
 | Screen | Purpose | Entry Points |
 |--------|---------|--------------|
-| Countdown - Prelaunch page (8PJQswPZmU) | Event countdown before SAA 2025 goes live | Direct URL before event launch |
+| Countdown - Prelaunch page (8PJQswPZmU) | **Global pre-entry gate** that precedes ALL other screens until `LAUNCH_DATE` (from `.env`) passes. Displays LED-styled DAYS/HOURS/MINUTES countdown over a hero background. No authentication, no interactive elements. On launch, auto-redirects to Login (or Homepage if authenticated). | ANY route while `now < process.env.NEXT_PUBLIC_LAUNCH_DATE` (intercepted by Next.js middleware) |
+
+**Gate behavior**:
+- Implemented in Next.js `middleware.ts` so it intercepts every route pre-launch
+- Exempts static assets, `_next/*`, health probes, and `/countdown` itself
+- Configurable via `NEXT_PUBLIC_LAUNCH_DATE` (ISO 8601) in `.env`
+- Ops bypass mechanism (cookie/query token) recommended for admin/QA preview
 
 ### Group: Main Application
 | Screen | Purpose | Entry Points |
@@ -442,9 +454,10 @@ flowchart LR
 
 ### Routing
 - Router: Next.js App Router
+- **Pre-launch gate (highest priority)**: `middleware.ts` checks `process.env.NEXT_PUBLIC_LAUNCH_DATE` on every request. If `now < LAUNCH_DATE`, the middleware rewrites to `/countdown` regardless of the target path. This precedes authentication and role checks.
 - Protected routes require Supabase authentication session
 - Admin routes require admin role check
-- Pre-launch route shows countdown before event goes live
+- After `LAUNCH_DATE` is reached, the gate becomes a no-op and normal routing applies
 
 ### Platform Support
 - **Web**: Full-featured responsive web application (responsive design for mobile/tablet/desktop)
@@ -461,6 +474,7 @@ flowchart LR
 | 2026-04-15 | Navigation mapping | All screen groups | Mapped Login -> Homepage -> all feature flows |
 | 2026-04-15 | API endpoint prediction | 35 endpoints | Predicted REST API endpoints from screen interactions |
 | 2026-04-17 | Screen spec created | He thong giai (zFYDgyj_pD) | Detailed screen spec generated at `.momorph/contexts/screen_specs/he-thong-giai.md`; mapped header/footer navigations, 6 award cards, Sun*Kudos promo CTA, anchor-scroll left menu |
+| 2026-04-17 | Screen spec created | Countdown - Prelaunch (8PJQswPZmU) | Detailed screen spec at `.momorph/contexts/screen_specs/countdown-prelaunch.md`. Captured as **GLOBAL PRE-ENTRY GATEKEEPER** - precedes ALL other screens while `now < NEXT_PUBLIC_LAUNCH_DATE` (configured in `.env`). Implemented via Next.js `middleware.ts`. LED-styled DAYS/HOURS/MINUTES countdown over hero background. Auto-redirects to Login/Homepage when countdown reaches zero. Updated navigation graph to show gate-edges to all main screens. |
 
 ---
 

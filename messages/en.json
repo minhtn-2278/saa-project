@@ -57,12 +57,30 @@
       "sectionLabel": "Sun* annual awards 2025",
       "title": "Award System",
       "detail": "Details",
-      "topTalent": { "name": "Top Talent", "description": "Honoring top outstanding individuals in every aspect" },
-      "topProject": { "name": "Top Project", "description": "Honoring outstanding projects with notable revenue" },
-      "topProjectLeader": { "name": "Top Project Leader", "description": "Honoring inspiring leaders driving project breakthroughs" },
-      "bestManager": { "name": "Best Manager", "description": "Honoring managers with excellent leadership and team guidance" },
-      "signature2025": { "name": "Signature 2025 - Creator", "description": "Honoring the most creative individual of 2025" },
-      "mvp": { "name": "MVP (Most Valuable Person)", "description": "Honoring the most valuable contributor" }
+      "topTalent": {
+        "name": "Top Talent",
+        "description": "Honoring top outstanding individuals in every aspect"
+      },
+      "topProject": {
+        "name": "Top Project",
+        "description": "Honoring outstanding projects with notable revenue"
+      },
+      "topProjectLeader": {
+        "name": "Top Project Leader",
+        "description": "Honoring inspiring leaders driving project breakthroughs"
+      },
+      "bestManager": {
+        "name": "Best Manager",
+        "description": "Honoring managers with excellent leadership and team guidance"
+      },
+      "signature2025": {
+        "name": "Signature 2025 - Creator",
+        "description": "Honoring the most creative individual of 2025"
+      },
+      "mvp": {
+        "name": "MVP (Most Valuable Person)",
+        "description": "Honoring the most valuable contributor"
+      }
     },
     "kudos": {
       "label": "Recognition Movement",
@@ -119,5 +137,9 @@
       "description": "NEW IN SAA 2025\nThe activity of recognizing and thanking colleagues — held for the first time for all Sunners. Deployed in November 2025, encouraging Sun* members to share recognition and thanks through the organizer's system.",
       "cta": "Learn more"
     }
+  },
+  "prelaunch": {
+    "title": "Event starts in",
+    "srSummary": "{days} days, {hours} hours, {minutes} minutes remaining"
   }
 }
