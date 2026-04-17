@@ -74,5 +74,50 @@
       "writeKudo": "Viết Kudo",
       "rules": "Thể lệ"
     }
+  },
+  "awardsPage": {
+    "eyebrow": "Sun* Annual Awards 2025",
+    "title": "Hệ thống giải thưởng SAA 2025",
+    "metaTitle": "Hệ thống giải thưởng SAA 2025 | Sun*",
+    "metaDescription": "Toàn bộ hệ thống giải thưởng của Sun* Annual Awards 2025: Top Talent, Top Project, Top Project Leader, Best Manager, Signature 2025 – Creator và MVP.",
+    "menuAriaLabel": "Danh mục giải thưởng",
+    "quantityLabel": "Số lượng giải thưởng:",
+    "valueLabel": "Giá trị giải thưởng:",
+    "perAward": "cho mỗi giải thưởng",
+    "or": "hoặc",
+    "units": {
+      "don_vi": "Đơn vị",
+      "ca_nhan": "Cá nhân",
+      "tap_the": "Tập thể",
+      "ca_nhan_hoac_tap_the": "Cá nhân hoặc tập thể"
+    },
+    "signature": {
+      "forIndividual": "cho giải cá nhân",
+      "forGroup": "cho giải tập thể"
+    },
+    "topTalent": {
+      "description": "Giải thưởng Top Talent vinh danh những cá nhân xuất sắc toàn diện – những người không ngừng khẳng định năng lực chuyên môn vững vàng, hiệu suất công việc vượt trội, luôn mang lại giá trị vượt kỳ vọng, được đánh giá cao bởi khách hàng và đồng đội. Với tinh thần sẵn sàng nhận mọi nhiệm vụ tổ chức giao phó, họ luôn là nguồn cảm hứng, thúc đẩy động lực và tạo ảnh hưởng tích cực đến cả tập thể."
+    },
+    "topProject": {
+      "description": "Giải thưởng Top Project vinh danh những dự án xuất sắc trên mọi phương diện, có doanh thu nổi bật, mang lại giá trị thực tiễn cao cho khách hàng và tổ chức. Dự án được ghi nhận không chỉ bởi kết quả cuối cùng mà còn bởi quá trình triển khai chuyên nghiệp, tinh thần đổi mới và khả năng vượt qua thử thách."
+    },
+    "topProjectLeader": {
+      "description": "Giải thưởng Top Project Leader vinh danh những người quản lý dự án xuất sắc – những người dẫn dắt dự án bứt phá, truyền cảm hứng cho đội ngũ, đưa ra các quyết định đúng đắn trong những tình huống khó khăn, và tạo ra môi trường làm việc gắn kết, hiệu quả."
+    },
+    "bestManager": {
+      "description": "Giải thưởng Best Manager vinh danh những người quản lý có năng lực xuất sắc trong việc dẫn dắt đội nhóm, phát triển con người, và mang lại kết quả kinh doanh ấn tượng. Họ là tấm gương về sự tận tâm, trách nhiệm và khả năng lãnh đạo hiệu quả."
+    },
+    "signature2025": {
+      "description": "Giải thưởng Signature 2025 – Creator vinh danh những cá nhân/tập thể có sáng tạo đặc biệt, tạo ra những sản phẩm, dịch vụ hoặc ý tưởng mang tính đột phá cho năm 2025. Đây là sự ghi nhận đặc biệt dành cho tinh thần đổi mới không ngừng của người Sun*."
+    },
+    "mvp": {
+      "description": "Giải thưởng MVP (Most Valuable Person) vinh danh cá nhân có đóng góp giá trị nhất trong năm – người mà sự hiện diện, nỗ lực và thành quả đã tạo ra tác động lớn đến tổ chức. Đây là giải thưởng cao quý nhất dành cho một cá nhân trong hệ thống giải thưởng SAA 2025."
+    },
+    "kudos": {
+      "eyebrow": "Phong trào ghi nhận",
+      "title": "Sun* Kudos",
+      "description": "ĐIỂM MỚI CỦA SAA 2025\nHoạt động ghi nhận và cảm ơn đồng nghiệp - lần đầu tiên được diễn ra dành cho tất cả Sunner. Hoạt động sẽ được triển khai vào tháng 11/2025, khuyến khích người Sun* chia sẻ những lời ghi nhận, cảm ơn đồng nghiệp trên hệ thống do BTC công bố.",
+      "cta": "Chi tiết"
+    }
   }
 }

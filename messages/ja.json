@@ -74,5 +74,50 @@
       "writeKudo": "Kudo作成",
       "rules": "規則"
     }
+  },
+  "awardsPage": {
+    "eyebrow": "Sun* Annual Awards 2025",
+    "title": "SAA 2025 アワードシステム",
+    "metaTitle": "SAA 2025 アワードシステム | Sun*",
+    "metaDescription": "Sun* Annual Awards 2025 の全アワード: Top Talent、Top Project、Top Project Leader、Best Manager、Signature 2025 – Creator、MVP。",
+    "menuAriaLabel": "アワードカテゴリー",
+    "quantityLabel": "受賞数:",
+    "valueLabel": "賞金:",
+    "perAward": "1賞あたり",
+    "or": "または",
+    "units": {
+      "don_vi": "単位",
+      "ca_nhan": "個人",
+      "tap_the": "団体",
+      "ca_nhan_hoac_tap_the": "個人または団体"
+    },
+    "signature": {
+      "forIndividual": "個人賞の場合",
+      "forGroup": "団体賞の場合"
+    },
+    "topTalent": {
+      "description": "Top Talent アワードは、専門性と業績で優れた成果を残し、期待を超える価値を提供し続け、クライアントとチームから高く評価されるオールラウンドな個人を表彰します。組織が任せるあらゆるタスクに進んで取り組み、チーム全体にポジティブな影響を与える存在です。"
+    },
+    "topProject": {
+      "description": "Top Project アワードは、あらゆる面で優れ、売上でも際立ち、クライアントと組織に高い実用価値を提供したプロジェクトを表彰します。最終的な成果だけでなく、プロフェッショナルな実行力、革新の精神、困難を乗り越える力も評価されます。"
+    },
+    "topProjectLeader": {
+      "description": "Top Project Leader アワードは、プロジェクトを飛躍させ、チームを鼓舞し、困難な状況で的確な判断を下し、結束力のある生産的な職場環境を築いた優れたプロジェクトマネージャーを表彰します。"
+    },
+    "bestManager": {
+      "description": "Best Manager アワードは、チームを牽引し、人材を育成し、印象的なビジネス成果をもたらす卓越した能力を持つマネージャーを表彰します。献身、責任感、効果的なリーダーシップの模範となる存在です。"
+    },
+    "signature2025": {
+      "description": "Signature 2025 – Creator アワードは、2025年に画期的な製品、サービス、アイデアを生み出した、卓越した創造性を持つ個人またはチームを表彰します。Sun* の絶え間ない革新の精神を特別に称える賞です。"
+    },
+    "mvp": {
+      "description": "MVP (Most Valuable Person) アワードは、その年に最も価値ある貢献をした個人 — 存在、努力、成果が組織全体に大きな影響を与えた人物を表彰します。SAA 2025 アワードシステムにおける個人への最高の栄誉です。"
+    },
+    "kudos": {
+      "eyebrow": "表彰活動",
+      "title": "Sun* Kudos",
+      "description": "SAA 2025 の新機能\n同僚への感謝と認識の活動 — すべての Sunner を対象に初めて開催。2025年11月に展開され、Sun* メンバーが主催者のシステムを通じて同僚への感謝の言葉を共有することを奨励します。",
+      "cta": "詳細"
+    }
   }
 }

@@ -2,6 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
+interface AppFooterProps {
+  showNav?: boolean;
+}
+
 const FOOTER_LINKS = [
   { href: "/", labelKey: "nav.aboutSAA" },
   { href: "/awards", labelKey: "nav.awardsInfo" },
@@ -9,8 +13,20 @@ const FOOTER_LINKS = [
   { href: "/rules", labelKey: "nav.rules" },
 ] as const;
 
-export function AppFooter() {
+export function AppFooter({ showNav = true }: AppFooterProps = {}) {
   const t = useTranslations();
+
+  if (!showNav) {
+    return (
+      <footer className="w-full border-t border-[#2E3940]">
+        <div className="max-w-[1440px] mx-auto px-4 py-6 sm:px-12 sm:py-8 lg:px-[90px] lg:py-10 flex items-center justify-center">
+          <p className="text-base font-bold text-white text-center">
+            {t("login.footer.copyright")}
+          </p>
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer className="w-full border-t border-[#2E3940]">

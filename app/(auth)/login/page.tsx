@@ -59,7 +59,7 @@ export default async function LoginPage() {
           </Suspense>
         </main>
 
-        <AppFooter />
+        <AppFooter showNav={false} />
       </div>
 
       <noscript>

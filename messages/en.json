@@ -74,5 +74,50 @@
       "writeKudo": "Write Kudo",
       "rules": "Rules"
     }
+  },
+  "awardsPage": {
+    "eyebrow": "Sun* Annual Awards 2025",
+    "title": "SAA 2025 Awards System",
+    "metaTitle": "SAA 2025 Awards System | Sun*",
+    "metaDescription": "The complete Sun* Annual Awards 2025 catalogue: Top Talent, Top Project, Top Project Leader, Best Manager, Signature 2025 – Creator, and MVP.",
+    "menuAriaLabel": "Award categories",
+    "quantityLabel": "Number of awards:",
+    "valueLabel": "Prize value:",
+    "perAward": "per award",
+    "or": "or",
+    "units": {
+      "don_vi": "Unit(s)",
+      "ca_nhan": "Individual(s)",
+      "tap_the": "Team(s)",
+      "ca_nhan_hoac_tap_the": "Individual or team"
+    },
+    "signature": {
+      "forIndividual": "for the individual prize",
+      "forGroup": "for the team prize"
+    },
+    "topTalent": {
+      "description": "The Top Talent award honors exceptional all-around individuals — those who consistently demonstrate solid expertise, outstanding work performance, and deliver value beyond expectations, highly regarded by clients and teammates. With a readiness to take on any task the organization entrusts to them, they inspire, drive motivation, and create a positive impact on the entire team."
+    },
+    "topProject": {
+      "description": "The Top Project award honors projects that excel on every front — outstanding revenue, high practical value for clients and the organization. A winning project is recognized not only by its final results but also by its professional execution, spirit of innovation, and ability to overcome challenges."
+    },
+    "topProjectLeader": {
+      "description": "The Top Project Leader award honors outstanding project managers — those who drive projects to breakthroughs, inspire their teams, make sound decisions in tough situations, and foster a cohesive, productive work environment."
+    },
+    "bestManager": {
+      "description": "The Best Manager award honors managers with exceptional ability to lead teams, develop people, and deliver impressive business results. They stand as examples of dedication, responsibility, and effective leadership."
+    },
+    "signature2025": {
+      "description": "The Signature 2025 – Creator award honors individuals or teams with exceptional creativity, delivering products, services, or ideas that break new ground in 2025. This is a special recognition of the relentless spirit of innovation at Sun*."
+    },
+    "mvp": {
+      "description": "The MVP (Most Valuable Person) award honors the individual who contributed the most value of the year — whose presence, effort, and results created major impact across the organization. This is the highest honor for an individual in the SAA 2025 awards system."
+    },
+    "kudos": {
+      "eyebrow": "Recognition movement",
+      "title": "Sun* Kudos",
+      "description": "NEW IN SAA 2025\nThe activity of recognizing and thanking colleagues — held for the first time for all Sunners. Deployed in November 2025, encouraging Sun* members to share recognition and thanks through the organizer's system.",
+      "cta": "Learn more"
+    }
   }
 }

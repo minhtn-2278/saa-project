@@ -5,7 +5,7 @@
 - **Figma File Key**: 9ypp4enmFmdK3YAFJLIu6C
 - **Figma URL**: https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C
 - **Created**: 2026-04-15
-- **Last Updated**: 2026-04-16
+- **Last Updated**: 2026-04-17
 
 ---
 
@@ -30,7 +30,7 @@
 | 1 | Login | GzbNeVGJHz | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=GzbNeVGJHz) | discovered | POST /auth/google | Homepage SAA, Dropdown-ngon ngu |
 | 2 | Countdown - Prelaunch page | 8PJQswPZmU | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=8PJQswPZmU) | discovered | GET /event/status | Homepage SAA (after countdown) |
 | 3 | Homepage SAA | i87tDx10uM | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=i87tDx10uM) | discovered | GET /home, GET /awards, GET /kudos/recent | He thong giai, Sun*Kudos Live board, Profile, Notifications, The le, Open secret box, Viet Kudo |
-| 4 | He thong giai (Award System) | zFYDgyj_pD | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=zFYDgyj_pD) | discovered | GET /awards, GET /awards/:id | Homepage SAA, Award detail |
+| 4 | He thong giai (Award System) | zFYDgyj_pD | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=zFYDgyj_pD) | discovered (spec'd) | GET /awards, GET /awards/:id, GET /users/me, GET /notifications | Homepage SAA, Sun*Kudos Live board, The le, Dropdown-ngon ngu, Notification dropdown, Dropdown-profile |
 | 5 | Sun* Kudos - Live board | MaZUn5xHXZ | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=MaZUn5xHXZ) | discovered | GET /kudos, GET /kudos/filter | Viet Kudo, View Kudo, Profile nguoi khac, Dropdown Hashtag filter, Dropdown Phong ban |
 | 6 | D1_Sunkudos | QJd9jB9PDt | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=QJd9jB9PDt) | discovered | GET /kudos | Sun*Kudos Live board |
 | 7 | Viet Kudo (Write Kudo) | ihQ26W78P2 | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=ihQ26W78P2) | discovered | POST /kudos, GET /users/search | Sun*Kudos Live board, Dropdown list hashtag, Dropdown list nguoi nhan |
@@ -175,6 +175,11 @@ flowchart TD
     Homepage --> ProfileDropdown
 
     Awards --> Homepage
+    Awards --> KudosBoard
+    Awards --> Rules
+    Awards --> LangDropdown
+    Awards --> NotifDropdown
+    Awards --> ProfileDropdown
 
     KudosBoard --> WriteKudo
     KudosBoard --> ViewKudo
@@ -455,6 +460,7 @@ flowchart LR
 | 2026-04-16 | Scoped to Web only | 114 frames (42 web + 72 components) | Removed iOS screens per project scope |
 | 2026-04-15 | Navigation mapping | All screen groups | Mapped Login -> Homepage -> all feature flows |
 | 2026-04-15 | API endpoint prediction | 35 endpoints | Predicted REST API endpoints from screen interactions |
+| 2026-04-17 | Screen spec created | He thong giai (zFYDgyj_pD) | Detailed screen spec generated at `.momorph/contexts/screen_specs/he-thong-giai.md`; mapped header/footer navigations, 6 award cards, Sun*Kudos promo CTA, anchor-scroll left menu |
 
 ---
 
