@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type {
@@ -45,7 +45,17 @@ export function WriteKudoModalMount({
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const open = params.get("write") === "kudo";
+  const urlOpen = params.get("write") === "kudo";
+
+  // `open` is driven by local state, not directly by the URL, so we can
+  // unmount the modal instantly on close without waiting for the Next.js
+  // router navigation (which typically takes 50–200 ms). We still sync
+  // from the URL so deep links + FAB clicks that push `?write=kudo` still
+  // open the modal.
+  const [open, setOpen] = useState(urlOpen);
+  useEffect(() => {
+    setOpen(urlOpen);
+  }, [urlOpen]);
 
   const [titles, setTitles] = useState<TitlePreview[]>(initialTitles ?? []);
   const [topHashtags, setTopHashtags] = useState<HashtagPreview[]>(
@@ -84,12 +94,24 @@ export function WriteKudoModalMount({
     }
   }, [open, titles.length, topHashtags.length]);
 
+  // Stabilise `handleClose` so the modal doesn't get a fresh `onClose` prop
+  // on every URL tick. Latest params/pathname are read via refs. Closing
+  // first flips `open` locally (instant React unmount) then fires the async
+  // `router.replace` in the background so the URL stays consistent with
+  // the UI without blocking the close animation.
+  const paramsRef = useRef(params);
+  const pathnameRef = useRef(pathname);
+  paramsRef.current = params;
+  pathnameRef.current = pathname;
   const handleClose = useCallback(() => {
-    const next = new URLSearchParams(params.toString());
+    setOpen(false);
+    const next = new URLSearchParams(paramsRef.current.toString());
     next.delete("write");
     const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname);
-  }, [params, pathname, router]);
+    router.replace(qs ? `${pathnameRef.current}?${qs}` : pathnameRef.current, {
+      scroll: false,
+    });
+  }, [router]);
 
   if (!open) return null;
 

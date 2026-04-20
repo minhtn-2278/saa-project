@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo, useState } from "react";
 import type { Editor } from "@tiptap/core";
-import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ModalShell } from "./ModalShell";
@@ -62,8 +61,6 @@ export function WriteKudoModal({
   const t = useTranslations("kudos.writeKudo");
   const tErr = useTranslations("kudos.writeKudo.errors");
   const resolveError = useErrorResolver();
-  const router = useRouter();
-  const pathname = usePathname();
 
   const form = useKudoForm();
   const {
@@ -94,13 +91,16 @@ export function WriteKudoModal({
   );
 
   const closeAndReset = useCallback(() => {
+    // Single-shot close: wipe the persisted draft then fire `onClose()`.
+    // We intentionally skip `reset()` / `setServerErrors({}) /
+    // `setShowValidation(false)` — the modal is about to unmount, so every
+    // piece of in-memory state (reducer, useState, editor instance) is
+    // discarded automatically. Removing those calls collapses the close
+    // sequence from "state reset → render → URL change → render → unmount"
+    // into "clearDraft → URL change → unmount".
     clearDraft();
-    reset();
-    setServerErrors({});
-    setShowValidation(false);
-    editor?.commands.clearContent();
     onClose();
-  }, [onClose, reset, editor]);
+  }, [onClose]);
 
   const handleCancelRequest = useCallback(() => {
     if (state.isDirty) {
@@ -207,18 +207,13 @@ export function WriteKudoModal({
         toast.error(t("toasts.failure"));
         return;
       }
-      // Clear UI validation surface BEFORE the state reset, so the brief
-      // re-render between SUBMIT_SUCCESS and modal unmount doesn't flash
-      // "required" errors against the newly-emptied fields.
-      setShowValidation(false);
-      setServerErrors({});
-      form.dispatch({ type: "SUBMIT_SUCCESS" });
+      // Single-shot close after success: `clearDraft` wipes sessionStorage,
+      // toast announces success, `onClose()` triggers the URL change that
+      // unmounts the modal. No state resets needed — the component is about
+      // to unmount, every piece of in-memory state (reducer, useState,
+      // editor instance) is discarded automatically.
       clearDraft();
-      editor?.commands.clearContent();
       toast.success(t("toasts.success"));
-      // `onClose()` strips `?write=kudo` via `router.replace`, which already
-      // refreshes the segment's server components — no extra `router.refresh`
-      // needed (it was double-firing and making the success path feel slow).
       onClose();
     } catch (err) {
       console.error("POST /api/kudos failed", err);
@@ -228,7 +223,7 @@ export function WriteKudoModal({
       });
       toast.error(t("toasts.failure"));
     }
-  }, [isValid, state, form, t, tErr, router, pathname, onClose, editor]);
+  }, [isValid, state, form, t, tErr, onClose]);
 
   return (
     <>
@@ -345,8 +340,12 @@ export function WriteKudoModal({
         onOpenChange={setShowCancelConfirm}
         onConfirm={() => {
           setShowCancelConfirm(false);
+          // `closeAndReset` already fires `onClose()` → Mount's `handleClose`
+          // which calls `router.replace` to strip `?write=kudo`. A second
+          // `router.replace(pathname)` here kicked off an extra navigation
+          // (useSearchParams re-fires → Mount re-renders → WriteKudoModal
+          // gets a new onClose prop → one more render right before unmount).
           closeAndReset();
-          router.replace(pathname);
         }}
       />
     </>
