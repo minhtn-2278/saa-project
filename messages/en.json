@@ -158,6 +158,7 @@
           "hint": "e.g. A person who inspires me.\nThe title appears as the Kudo headline."
         },
         "body": {
+          "label": "Message",
           "placeholder": "Share your thanks and recognition with your teammate here!",
           "mentionHint": "Type \"@ + name\" to mention a colleague"
         },

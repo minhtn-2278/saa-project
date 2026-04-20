@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
@@ -17,6 +19,28 @@ function supabaseStorageHostname(): string {
     return "*.supabase.co";
   }
 }
+
+/**
+ * Build-time guard (plan § Q-P7): fail `next build` if the test-only sign-in
+ * endpoint is still present in a production build. Runtime checks inside the
+ * route add a second line of defence, but this prevents the file from ever
+ * reaching a production bundle in the first place.
+ */
+function assertNoTestRoutesInProduction(): void {
+  if (process.env.NODE_ENV !== "production") return;
+  const testRoute = resolve(process.cwd(), "app/api/_test/sign-in/route.ts");
+  if (existsSync(testRoute)) {
+    throw new Error(
+      [
+        "[next.config.ts] SECURITY: app/api/_test/sign-in/route.ts must NOT be",
+        "present in a production build. Remove the file from the production",
+        "branch or add it to a test-only ignore pattern before deploying.",
+      ].join("\n"),
+    );
+  }
+}
+
+assertNoTestRoutesInProduction();
 
 const nextConfig: NextConfig = {
   images: {

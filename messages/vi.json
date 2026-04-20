@@ -157,6 +157,7 @@
           "hint": "Ví dụ: Người truyền động lực cho tôi.\nDanh hiệu sẽ hiển thị làm tiêu đề Kudos của bạn."
         },
         "body": {
+          "label": "Lời nhắn",
           "placeholder": "Hãy gửi gắm lời cám ơn và ghi nhận đến đồng đội tại đây nhé!",
           "mentionHint": "Bạn có thể \"@ + tên\" để nhắc tới đồng nghiệp khác"
         },

@@ -7,7 +7,9 @@ export default defineConfig({
   test: {
     environment: "happy-dom",
     setupFiles: ["./tests/setup.ts"],
-    include: ["tests/**/*.test.{ts,tsx}"],
+    include: ["tests/**/*.{test,spec}.{ts,tsx}"],
+    // Playwright specs live under tests/e2e/ and must not run under Vitest.
+    exclude: ["node_modules/**", ".next/**", "tests/e2e/**"],
     globals: true,
   },
   resolve: {

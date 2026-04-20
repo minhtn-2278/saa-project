@@ -36,6 +36,12 @@ export async function middleware(request: NextRequest) {
   const { user, supabaseResponse } = await updateSession(request);
 
   if (!user && !isPublicRoute) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { error: { code: "UNAUTHORIZED", message: "Not authenticated" } },
+        { status: 401 },
+      );
+    }
     const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);
   }

@@ -1,6 +1,8 @@
+import { Toaster } from "sonner";
 import { AppHeader } from "@/components/shared/AppHeader";
 import { AppFooter } from "@/components/shared/AppFooter";
 import { FloatingActionButton } from "@/components/shared/FloatingActionButton";
+import { WriteKudoModalMount } from "@/components/kudos/WriteKudoModalMount";
 
 export default function DashboardLayout({
   children,
@@ -15,6 +17,8 @@ export default function DashboardLayout({
       </main>
       <AppFooter />
       <FloatingActionButton />
+      <WriteKudoModalMount />
+      <Toaster position="top-center" richColors />
     </div>
   );
 }

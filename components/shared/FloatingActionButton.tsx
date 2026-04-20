@@ -2,21 +2,30 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { PencilIcon } from "@/components/ui/icons/PencilIcon";
 import { KudosLogoIcon } from "@/components/ui/icons/KudosLogoIcon";
 import { RulesIcon } from "@/components/ui/icons/RulesIcon";
 
-const FAB_OPTIONS = [
-  { href: "/kudos/write", labelKey: "fab.writeKudo", Icon: PencilIcon },
-  { href: "/rules", labelKey: "fab.rules", Icon: RulesIcon },
-] as const;
-
 export function FloatingActionButton() {
   const t = useTranslations("homepage");
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const writeKudoHref = (() => {
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
+    params.set("write", "kudo");
+    return `${pathname ?? "/"}?${params.toString()}`;
+  })();
+
+  const fabOptions = [
+    { href: writeKudoHref, labelKey: "fab.writeKudo", Icon: PencilIcon },
+    { href: "/rules", labelKey: "fab.rules", Icon: RulesIcon },
+  ] as const;
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -48,7 +57,7 @@ export function FloatingActionButton() {
           role="menu"
           className="absolute bottom-full right-0 mb-3 bg-[#101417] border border-[#2E3940] rounded-xl shadow-lg overflow-hidden min-w-[180px]"
         >
-          {FAB_OPTIONS.map((option) => (
+          {fabOptions.map((option) => (
             <Link
               key={option.href}
               href={option.href}

@@ -82,7 +82,7 @@ Authenticated Sun\* staff submit a public Kudo to a single teammate, choose an h
 - `kudos.anonymous_alias` — CHECK `char_length BETWEEN 1 AND 60` when non-null; CHECK it is NULL unless `is_anonymous = TRUE`.
 - Hashtag count per kudo (1–5) and image count per kudo (0–5) — enforced in application + API validation layer (no DB trigger).
 - Anonymity is a **presentation** flag; the real `author_id` is never nullable. Masking is applied in the application layer by `lib/kudos/serialize-kudo.ts` — the API returns flat `senderName` / `senderAvatarUrl` / `recipientName` / `recipientAvatarUrl`, never a raw `author` object.
-- Inline title / hashtag creation is handled by a transactional Postgres function (`fn_insert_title_if_missing`, `fn_insert_hashtag_if_missing`) using `INSERT ... ON CONFLICT (slug) DO NOTHING RETURNING id` → fallback `SELECT`. This avoids dupes under concurrent submission.
+- Inline title / hashtag creation is handled at the API layer (`POST /api/kudos` Route Handler) via `supabase.from(...).upsert({slug, label}, {onConflict: 'slug', ignoreDuplicates: true})`. The partial unique index on `slug WHERE deleted_at IS NULL` makes this race-safe without a Postgres function.
 - `uploads` rows older than their `expires_at` without being linked to any content (orphaned) are garbage-collected by a scheduled job (outside DB).
 - Soft-delete everywhere via `deleted_at TIMESTAMPTZ` (no `is_deleted` booleans).
 - `updated_at` is maintained by the application (no triggers).
@@ -98,7 +98,7 @@ Authenticated Sun\* staff submit a public Kudo to a single teammate, choose an h
 | `employees (employee_code)` UNIQUE partial | Employee-code uniqueness among active staff |
 | `employees (lower(full_name) gin_trgm_ops)` GIN | Autocomplete / `@mention` typeahead (diacritic-tolerant, case-insensitive) |
 | `employees (department)` | Recipient filter / org-chart views |
-| `employees (is_admin)` partial | Admin-role lookups for RLS |
+| `employees (is_admin)` partial | Admin-role lookups in Route Handlers (no RLS — spec rev 3 FR-016) |
 | `kudos (author_id, created_at DESC)` | "My Kudos" list on profile |
 | `kudos (recipient_id, created_at DESC)` | "Received Kudos" on profile + award leaderboards |
 | `kudos (status, created_at DESC)` | Public board feed (status='published') |

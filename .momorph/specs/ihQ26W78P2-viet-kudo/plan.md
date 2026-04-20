@@ -29,7 +29,7 @@ Ship a vertically-sliced **Write-Kudo modal** accessible from the homepage Float
 | `sanitize-html` (or equivalent) | Server-side sanitisation of the ProseMirror JSON before `INSERT` | Enforces allow-list of nodes/marks, strips disallowed hrefs |
 | `@radix-ui/react-dialog` *(optional)* | Accessible modal primitive (focus trap, `aria-modal`, ESC handling) | Constitution allows it under "approved libraries"; add only if we don't want to hand-roll per WCAG. **Decision deferred** to task phase — see Open Questions |
 
-**Database**: Supabase Postgres (RLS enabled per constitution); new tables per [database-schema.sql](../../contexts/database-schema.sql): `employees`, `kudos`, `titles`, `hashtags`, `uploads`, `kudo_hashtags`, `kudo_images`, `kudo_mentions`
+**Database**: Supabase Postgres (no RLS — authorisation enforced at the API layer per spec.md rev 3 FR-016); new tables per [database-schema.sql](../../contexts/database-schema.sql): `employees`, `kudos`, `titles`, `hashtags`, `uploads`, `kudo_hashtags`, `kudo_images`, `kudo_mentions`
 **Storage**: Supabase Storage, private bucket `kudo-images`
 **Testing**: Vitest 2 + Testing Library + `happy-dom`/`jsdom` (already wired via [vitest.config.ts](../../../vitest.config.ts)); Playwright 1.59 ([playwright.config.ts](../../../playwright.config.ts))
 **State Management**: Local React state for the form (`useReducer` for multi-field draft + sessionStorage sync); no global store needed. Server state comes from the route segment's Server Component.
@@ -48,7 +48,7 @@ Ship a vertically-sliced **Write-Kudo modal** accessible from the homepage Float
 | | `next/image`, `next/link` | ✅ Image thumbnails use `next/image`; `Tiêu chuẩn cộng đồng` uses `<a target="_blank">` (external target) — not `next/link` — per FR-015 |
 | | Route Handlers validate all inputs | ✅ Zod validation on every endpoint (FR-016 step 1, TR-004) |
 | | Tailwind utilities only | ✅ Design-style.md § Implementation Mapping uses Tailwind classes exclusively |
-| | Supabase client — RLS on every table | ✅ FR-016 defines RLS policies for every table; no raw SQL (TR-009) |
+| | Supabase client — no raw SQL in application code | ✅ All queries go through the typed Supabase JS client (TR-009). FR-016 (rev 3) moves authorisation to the API layer; no RLS on any feature table. This is a deliberate, documented deviation from the constitution default of "RLS on every table" — rationale: the anon-key session is minted only server-side inside same-origin Route Handlers + CSRF gate, so RLS would redundantly gate the same code path. If future features expose Supabase directly to the browser (e.g. Realtime), RLS will be added then. |
 | | Supabase Auth — HTTP-only cookies, PKCE | ✅ Already wired in [lib/supabase/server.ts](../../../lib/supabase/server.ts) and [app/api/auth/callback/route.ts](../../../app/api/auth/callback/route.ts) |
 | | `SUPABASE_SERVICE_ROLE_KEY` never in client bundle | ✅ This feature does not use the service-role client (Module Boundaries) |
 | **III. Test-First (NON-NEGOTIABLE)** | Tests written first; Red-Green-Refactor | ✅ Phase Breakdown below interleaves failing tests before implementation for every FR |
@@ -95,13 +95,14 @@ Ship a vertically-sliced **Write-Kudo modal** accessible from the homepage Float
   const employee = await getCurrentEmployee(supabase);  // lib/auth/current-employee.ts — returns 403 if missing
   const body = ZodSchema.parse(await req.json()); // lib/validations/kudos.ts
   ```
-- **Transactional create**: `POST /api/kudos` wraps all writes in a single Postgres transaction using an `rpc('fn_create_kudo', payload)` call. The RPC:
-  1. Resolves / inserts inline-created titles and hashtags (via `fn_insert_title_if_missing` / `fn_insert_hashtag_if_missing`).
-  2. Inserts the `kudos` row.
-  3. Bulk-inserts `kudo_hashtags`, `kudo_images`, `kudo_mentions`.
-  4. Bumps `hashtags.usage_count`.
-  5. Returns the new `kudos.id`.
-  The handler then reads the row back via `GET`-style select with the serializer to respond with the public shape (TR-005).
+- **Transactional create (TS chain, no RPC)**: `POST /api/kudos` runs a best-effort transactional chain in TypeScript via the Supabase JS client. No `rpc()` calls, no PL/pgSQL functions — spec.md rev 3 FR-016.
+  1. **Resolve inline-created titles / hashtags** — for each `{label}` entry the client sent, `supabase.from('hashtags').upsert({ slug, label, created_by }, { onConflict: 'slug', ignoreDuplicates: true }).select('id').single()` (one round-trip per new entity; race-safe because `slug` has a partial unique index). Existing-id entries are passed through unchanged.
+  2. **Insert the `kudos` row** — capture the returned `id`.
+  3. **Bulk-insert `kudo_hashtags`** — a single `supabase.from('kudo_hashtags').insert([...])` with the resolved hashtag ids. On failure: `DELETE FROM kudos WHERE id = ?` (compensating rollback) and return the error.
+  4. **Bulk-insert `kudo_images`** (Phase 4 when uploads ship) + **`kudo_mentions`** (also Phase 4 once the mention extension lands) — same failure compensation.
+  5. **Bump `hashtags.usage_count`** — separate `UPDATE` per hashtag id. Eventually consistent; a partial failure here leaves a stale counter but the Kudo itself is valid, so we log and move on rather than roll back.
+  6. **Re-read** the freshly-inserted row plus joins and pass through `serializeKudo` for the response (TR-005).
+  Orphaned `kudo_hashtags` / `kudo_images` / `kudo_mentions` can't exist after a rollback because they all have `ON DELETE CASCADE` on the parent `kudos` row. An integration test (`create-kudo-rollback.spec.ts`) forces a child-insert failure and asserts no orphan rows remain.
 - **Upload flow**: `POST /api/uploads` mints a signed upload URL via `supabase.storage.from('kudo-images').createSignedUploadUrl(path)`, inserts a matching `uploads` row with metadata (MIME, size, width, height), and returns `{ id, uploadUrl, signedReadUrl, expiresAt }` to the client. The client streams the file directly to Storage (TR-003).
 - **Masking**: `lib/kudos/serialize-kudo.ts` takes a DB row + joined employee rows and emits `{ senderName, senderAvatarUrl, recipientName, recipientAvatarUrl, ... }` per TR-005.
 - **Validation**: Zod schemas colocated in `lib/validations/kudos.ts` (create, list params) and `lib/validations/uploads.ts`.
@@ -219,10 +220,8 @@ supabase/
 │   ├── 202604201200_employees.sql                 [NEW — tables + indexes]
 │   ├── 202604201201_titles_hashtags.sql           [NEW]
 │   ├── 202604201202_uploads.sql                   [NEW]
-│   ├── 202604201203_kudos.sql                     [NEW — kudos + join tables + CHECK constraints]
-│   ├── 202604201204_rls_policies.sql              [NEW — FR-016 policies]
-│   ├── 202604201205_rpc_functions.sql             [NEW — fn_create_kudo, fn_insert_title_if_missing, fn_insert_hashtag_if_missing]
-│   └── 202604201206_submit_guard.sql              [NEW — kudo_submit_guard table for FR-012 server-side dedup (TTL-swept by cron job or application on insert)]
+│   └── 202604201203_kudos.sql                     [NEW — kudos + join tables + CHECK constraints]
+│   # (no RLS / RPC / dedup-guard migrations per spec rev 3 FR-016 — authorisation is API-only)
 ├── snippets/
 │   └── seed-kudos-test.sql                        [NEW — seed data for integration tests: 20 employees, 10 titles, 30 hashtags]
 └── config.toml                                    [MODIFIED — add kudo-images storage bucket config]
@@ -256,13 +255,12 @@ tests/
 ├── integration/
 │   └── kudos/
 │       ├── create-kudo.spec.ts                    [NEW — hits /api/kudos against test Supabase]
-│       ├── kudo-dedup.spec.ts                     [NEW — FR-012 server-side 2-second guard]
+│       ├── create-kudo-rollback.spec.ts           [NEW — force a child-insert failure, assert no orphan kudos row (TS-chain compensating rollback)]
 │       ├── employees-search.spec.ts               [NEW]
 │       ├── titles.spec.ts                         [NEW]
 │       ├── hashtags.spec.ts                       [NEW]
 │       ├── uploads.spec.ts                        [NEW]
-│       ├── anonymity-masking.spec.ts              [NEW — SC-004 verification]
-│       └── rls-defense.spec.ts                    [NEW — confirm anon role is locked out]
+│       └── anonymity-masking.spec.ts              [NEW — SC-004 verification]
 └── e2e/
     ├── _helpers/
     │   └── authSetup.ts                           [NEW — Playwright helper calling /api/_test/sign-in]
@@ -304,7 +302,7 @@ tests/
 
 ### Phase 1 — Foundation (schema, infra, shared helpers)
 
-- Run `supabase/migrations/202604201200*`..`202604201205*` locally via `supabase db reset` against the test project.
+- Run `supabase/migrations/202604201200*`..`202604201203*` locally via `supabase db reset` against the test project (4 schema migrations — no RLS/RPC/guard).
 - Create the private `kudo-images` Storage bucket + policies (`config.toml` update).
 - Seed dev employees (`supabase/snippets/seed-kudos-test.sql`).
 - Write **failing** tests for `lib/kudos/serialize-kudo.ts`, `lib/kudos/sanitize-body.ts`, `lib/kudos/hashtag-slug.ts`, `lib/auth/current-employee.ts` → implement → green. Zod schemas in `lib/validations/kudos.ts` + `uploads.ts` tested in the same cycle.
@@ -316,8 +314,7 @@ tests/
 
 - Backend first (TDD):
   - Integration test `tests/integration/kudos/create-kudo.spec.ts` for KUDO_CREATE_01, 02, 05, 06, 07, 08, 09, 12, 13, 14, 15, 16, 23 — **fails**.
-  - Implement `POST /api/kudos` handler + `fn_create_kudo` RPC → green.
-  - Implement **server-side dedup** (FR-012): Route Handler rejects a second request within 2 s whose `sha256(author_id || recipient_id || body_plain)` matches the last submission. Simplest impl: a short-TTL Postgres key table (`kudo_submit_guard`) or an in-memory LRU keyed per-instance. Decision: **Postgres table** for correctness across Next.js runtime instances. Add migration `202604201206_submit_guard.sql`. Integration test `kudo-dedup.spec.ts` verifies.
+  - Implement `POST /api/kudos` handler using the TS transactional chain described in § Backend Architecture (no RPC). Failing `create-kudo-rollback.spec.ts` → make it green by implementing the compensating `DELETE FROM kudos WHERE id=?` on any child-insert failure. FR-012 is satisfied by the client-side inflight lock alone; no server-side dedup guard.
   - Implement `GET /api/kudos` handler (list feed): paginated, masked via `lib/kudos/serialize-kudo.ts`, signs image URLs. Add tests KUDO_LIST_01, 04, 05, 09, 10 → green.
   - Integration tests for `/api/employees/search` (EMP_SEARCH_01, 04, 06, 08, 13, 14, 18) → green.
   - Integration tests for `/api/titles` (TITLE_LIST_01..04) and `/api/hashtags` (HASHTAG_LIST_01, 05, 08) → green.
@@ -356,7 +353,7 @@ tests/
 - Backend:
   - Extend `POST /api/kudos` for `isAnonymous` + `anonymousAlias` (KUDO_CREATE_03, 19a, 19b).
   - Extend for inline-create: `titleName` + `hashtags: [{label}]` (KUDO_CREATE_04a, 04b, 16a, 17a).
-  - `fn_insert_title_if_missing` / `fn_insert_hashtag_if_missing` RPCs + unit tests for concurrent-insert race (use pg's `ON CONFLICT ... DO NOTHING RETURNING`).
+  - Inline-create via `supabase.from('hashtags').upsert({slug, label}, {onConflict:'slug', ignoreDuplicates:true})` — same pattern for titles. Integration test (`concurrent-insert.spec.ts`) simulates two clients inserting the same new slug simultaneously and asserts one INSERT wins, the other reads back the same id.
   - Integration test `tests/integration/kudos/anonymity-masking.spec.ts` explicitly verifies SC-004: fetch `/api/kudos` as another user and assert `author_id` is absent and `senderName` is the alias or "Ẩn danh".
 - Frontend:
   - `AnonymousCheckbox` + `AnonymousAliasInput` with the 180 ms max-height reveal transition; state reset on uncheck (FR-008a).
@@ -383,17 +380,18 @@ tests/
 |---|---|---|---|
 | Tiptap + Next.js 16 RSC compatibility — Tiptap has historically needed care around SSR | Med | Med | Wrap the editor in a `"use client"` boundary; render only after `useEffect` mount; add a fallback textarea if loading fails. Prototype in Phase 3 day 1 before deeper integration |
 | ProseMirror sanitiser allow-list gap → XSS | Low | **High** | Use `sanitize-html` with a closed allow-list; add explicit unit tests for `<script>`, `onerror=`, `javascript:` href, `data:` href, external-domain href; add `@axe-core` + manual security review before launch |
-| RLS write policies too permissive (FR-016 trade-off) | Med | Med | Integration test `tests/integration/kudos/rls-defense.spec.ts` confirms that an `anon` role cannot INSERT/SELECT anything. Document the Route-Handler-enforced invariants in a code comment at the top of each handler. Plan a post-launch review once admin paths land to see if we can tighten DELETE/UPDATE policies |
+| **No RLS** — a future caller that bypasses the Route Handler (direct PostgREST call with a leaked session cookie) could write anything | Med | **High** | CSRF protection on every mutating Route Handler (TR-004) + same-origin check is the only guard. Document the threat model in `lib/supabase/server.ts` comment. If a direct-to-Supabase feature ships later, RLS MUST be added scoped to the tables that path touches |
+| **Non-atomic TS transactional chain** — the compensating `DELETE FROM kudos` can itself fail, leaving an orphan `kudos` row with empty join tables | Low | Med | `create-kudo-rollback.spec.ts` exercises the child-insert-fails path; a second test covers compensate-fails-too (the handler still returns 500 and logs with a correlation id so ops can clean up). Consider Postgres advisory locks for v2 if incidents occur |
 | `employees` master-data not seeded by launch → every user gets 403 | Med | **High** | Add a smoke test in CI that fails if the `employees` table in the preview environment has < 1 row. Add a deploy step to import from HR CSV before inviting users. Flagged in Dependencies checklist |
 | Supabase Storage signed URL TTL causes broken image after page sits open | Low | Low | Regenerate signed URLs at `GET /api/kudos` time (TR-008). If the feed is stale > 1 h the images 403 — acceptable for v1 since the client auto-refetches on `router.refresh()` |
-| Transaction atomicity of `fn_create_kudo` when inline-creating a hashtag concurrently with another user | Low | Med | Use `INSERT ... ON CONFLICT (slug) DO NOTHING RETURNING id` pattern with a fallback `SELECT`. Integration test simulates concurrent inserts |
+| Duplicate hashtag / title inserted under a race (no DB transaction) | Low | Low | `upsert({onConflict:'slug', ignoreDuplicates:true})` is race-safe because the partial unique index on `slug` rejects the second INSERT. Integration test `concurrent-insert.spec.ts` confirms |
 | Tailwind 4 CSS-first `@theme` vs JS config confusion | Low | Low | Decision made: use `@theme` in `app/globals.css` (see Architecture Decisions § Frontend). `tailwind.config.ts` stays minimal |
 | Draft in `sessionStorage` restores a deleted recipient → confusing UX | Low | Low | On restore, `GET /api/employees/search?q=<cached name>` to revalidate; drop entry + toast if not found (already in FR-011) |
 
 ### Estimated complexity
 
 - **Frontend**: **High** — 14 client components + Tiptap + 3 comboboxes with inline-create + accessibility + responsive
-- **Backend**: **Medium** — 6 Route Handlers + 3 RPC functions + RLS policies; standard patterns
+- **Backend**: **Medium** — 6 Route Handlers + a TS transactional chain with compensating rollback; no DB-layer RLS / RPCs / dedup guards.
 - **Testing**: **High** — 78 API test cases from BACKEND_API_TESTCASES.md, 4 E2E flows, component tests, axe-core, security tests
 
 ---
@@ -404,7 +402,7 @@ tests/
 
 - ✅ **Component/Module interactions**: `WriteKudoModal` ↔ sub-components (form state propagation, draft sync, submit flow).
 - ✅ **External dependencies**: Supabase Postgres (real test project), Supabase Storage (real bucket).
-- ✅ **Data layer**: CRUD on `kudos`, `uploads`, master tables; RLS policy enforcement.
+- ✅ **Data layer**: CRUD on `kudos`, `uploads`, master tables; TS-chain transactional-rollback correctness.
 - ✅ **User workflows**: US1 & US4 (P1) end-to-end via Playwright; US2 & US3 via Playwright at P2.
 
 ### Test categories
@@ -414,7 +412,7 @@ tests/
 | UI ↔ Logic | Yes | Form-state reducer, draft-sync, submit flow, inline-create toggles, anonymous reveal |
 | Service ↔ Service | N/A | No inter-service calls — single Route-Handler layer |
 | App ↔ External API | Yes | Supabase JS (DB + Storage); mention popover `fetch` |
-| App ↔ Data Layer | Yes | Route Handlers ↔ Postgres tables via the authenticated Supabase client; RLS verification |
+| App ↔ Data Layer | Yes | Route Handlers ↔ Postgres tables via the authenticated Supabase client; TS-chain rollback verification |
 | Cross-platform | Yes | Mobile bottom-sheet vs Desktop centred-dialog (Playwright viewports: 375×812, 768×1024, 1440×900) |
 
 ### Test environment
@@ -423,7 +421,7 @@ tests/
 - **Test data strategy**: `supabase/snippets/seed-kudos-test.sql` factory loaded before each integration test run; Playwright tests use a `beforeEach` API call to truncate + reseed.
 - **Isolation approach**:
   - **Unit-level function tests** (e.g. `lib/kudos/*.spec.ts`) that open their own Supabase client may wrap assertions in `BEGIN / ROLLBACK`.
-  - **HTTP-level integration tests** cannot share a transaction with the Route Handler — the handler opens its own connection. Strategy: `beforeEach` calls a `TRUNCATE TABLE kudos, kudo_hashtags, kudo_images, kudo_mentions, uploads, kudo_submit_guard RESTART IDENTITY CASCADE` plus a reseed of master tables (titles, hashtags, employees) from `seed-kudos-test.sql`. The truncate set excludes the seeded master tables so employees/titles/hashtags survive.
+  - **HTTP-level integration tests** cannot share a transaction with the Route Handler — the handler opens its own connection. Strategy: `beforeEach` calls a `TRUNCATE TABLE kudos, kudo_hashtags, kudo_images, kudo_mentions, uploads RESTART IDENTITY CASCADE` plus a reseed of master tables (titles, hashtags, employees) from `seed-kudos-test.sql`. The truncate set excludes the seeded master tables so employees/titles/hashtags survive.
   - **E2E tests** use per-test email aliases (e.g. `e2e-${nanoid}@sun-asterisk.com`) and the test sign-in endpoint seeds a matching `employees` row. Truncation happens once at `globalSetup` so tests can run in parallel against the same database without colliding.
 - **E2E authentication strategy**: Supabase Auth's Google OAuth + OTP flows are not automatable from Playwright. For E2E we use a **test-only sign-in endpoint** `app/api/_test/sign-in/route.ts` that is:
   1. Gated by `process.env.NODE_ENV === 'test'` AND a secret header `X-Test-Auth: ${TEST_AUTH_SECRET}`.
@@ -436,7 +434,7 @@ tests/
 | Dependency | Strategy | Rationale |
 |---|---|---|
 | Supabase Auth | **Real** | Auth/cookie flow is exercised end-to-end in integration + E2E; unit tests mock `getCurrentEmployee()` directly |
-| Supabase Postgres | **Real** in integration + E2E; **mock** in unit | Integration tests enforce RLS for real; unit-level component tests use MSW to stub Route Handlers |
+| Supabase Postgres | **Real** in integration + E2E; **mock** in unit | Integration tests exercise the real TS transactional chain + CHECK constraints; unit-level component tests use MSW to stub Route Handlers |
 | Supabase Storage | **Real** in integration/E2E; mock upload URL in unit | Storage Policies are only verifiable against a real bucket |
 | External mention/profile pages | **Stub** | Not under test |
 
@@ -456,8 +454,8 @@ tests/
 3. **Edge cases**
    - [ ] Kudo-self attempt → recipient filter + server 422
    - [ ] Duplicate hashtag (race) → `ON CONFLICT` resolves to existing id
-   - [ ] Anonymous masking: RLS + serializer — confirm `author_id` never on the wire (SC-004)
-   - [ ] RLS: unauthenticated `anon` client cannot INSERT anything
+   - [ ] Anonymous masking via serializer — confirm `author_id` never on the wire (SC-004)
+   - [ ] TS-chain rollback: child-insert failure → no orphan `kudos` row + no orphan join rows
 
 ### Tooling & framework
 
@@ -525,7 +523,13 @@ After plan approval:
 
 ## Notes
 
-- This feature is the **first write-path feature** in the SAA project. Every decision here — `getCurrentEmployee()`, RLS policy shape, sanitiser allow-list, serializer masking — will be copy-pasted by subsequent features (Kudos Board, Edit Kudo, Profile "Kudos Received"). Treat patterns here as templates worth over-documenting.
+- This feature is the **first write-path feature** in the SAA project. Every decision here — `getCurrentEmployee()`, TS-chain transactional pattern with compensating rollback, sanitiser allow-list, serializer masking — will be copy-pasted by subsequent features (Kudos Board, Edit Kudo, Profile "Kudos Received"). Treat patterns here as templates worth over-documenting.
 - The spec explicitly keeps **Supabase Realtime out of scope** (FR-014). If product later wants live-updating boards, the infrastructure to add it (channel subscription, anon-key filter) is tiny — plan the hook but don't enable it here.
 - The constitution's "Test-First (NON-NEGOTIABLE)" means the Phase 2 vertical slice MUST start with a failing integration test against a real Supabase test project, not a unit test with mocks. Budget 1 extra day in Phase 1 to stand up the seeded test project if it's not already wired.
 - Design-style.md is authoritative for pixel values — resist the urge to "round" 56px → `w-14` vs `h-[56px]`; keep Tailwind arbitrary values where the design demands exact pixels (e.g. the 502×60 submit button).
+
+### Revision history
+
+- **rev 3 (2026-04-20)** — Dropped **all DB-layer authorisation and transactional machinery** to match spec.md rev 3 FR-016: no Row Level Security, no `fn_create_kudo` / `fn_insert_*` RPC functions, no `kudo_submit_guard` dedup table. `POST /api/kudos` now uses a **TypeScript transactional chain with compensating rollback** via the Supabase JS client. FR-012 server-side 2-second dedup is gone; client-side button-disable lock is sole. Phase 1 runs 4 migrations instead of 6; `rls-defense.spec.ts` and `kudo-dedup.spec.ts` removed, `create-kudo-rollback.spec.ts` added. Constitution-deviation note added — the "RLS on every table" default is intentionally relaxed because the anon-key session is minted only server-side inside same-origin Route Handlers + CSRF gate (TR-004). Plan flags a new risk: CSRF is now the sole cross-origin guard, so it MUST be enabled on every mutating handler.
+- **rev 2 (2026-04-20)** — Reorganised; various tightenings from reviews.
+- **rev 1 (2026-04-20)** — Initial plan.

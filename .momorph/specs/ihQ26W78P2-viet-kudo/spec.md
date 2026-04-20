@@ -26,7 +26,7 @@ Per [.momorph/constitution.md](../../constitution.md) v1.0.0:
 | UI | React 19 | — |
 | Styling | **TailwindCSS 4** | All tokens in `tailwind.config.ts`; mobile-first breakpoints |
 | Language | **TypeScript 5**, `strict: true` | — |
-| Backend / Auth / DB / Storage | **Supabase** | Postgres DB with **RLS on every table**; **Supabase Auth** (HTTP-only cookies, PKCE) for gating; **Supabase Storage** for Kudo image attachments |
+| Backend / Auth / DB / Storage | **Supabase** | Postgres DB (authorisation enforced at the API layer — no RLS); **Supabase Auth** (HTTP-only cookies, PKCE) for gating; **Supabase Storage** for Kudo image attachments |
 | Schema validation | **Zod** | Request body & form validation on both client and Route Handlers |
 | Unit / integration tests | Vitest + Testing Library | Real Supabase test project for integration tests |
 | E2E tests | Playwright | Covers P1 stories (1 & 4) end-to-end |
@@ -34,7 +34,7 @@ Per [.momorph/constitution.md](../../constitution.md) v1.0.0:
 **Module boundaries** (per constitution § Folder Structure):
 - Client: `app/(dashboard)/kudos/_components/WriteKudoModal/...` + the sub-components in [design-style.md § Implementation Mapping](./design-style.md#implementation-mapping).
 - Server: `app/api/kudos/route.ts`, `app/api/employees/search/route.ts`, etc. (see § API Dependencies below).
-- Supabase clients: imported from `lib/supabase/client.ts` (browser) and `lib/supabase/server.ts` (route handlers + Server Components). The **service-role** client is reserved for privileged admin paths outside this feature; **this feature does not use the service-role client** — all reads and writes go through the authenticated user's Supabase client and rely on RLS + application-layer masking in `lib/kudos/serialize-kudo.ts`.
+- Supabase clients: imported from `lib/supabase/client.ts` (browser) and `lib/supabase/server.ts` (route handlers + Server Components). The **service-role** client is reserved for privileged admin paths outside this feature; **this feature does not use the service-role client** — all reads and writes go through the authenticated user's Supabase client and rely on application-layer enforcement: `getCurrentEmployee()` + identity checks + anonymity masking in `lib/kudos/serialize-kudo.ts`.
 - Auth-to-employee resolution: `lib/auth/current-employee.ts` exposes `getCurrentEmployee()` which reads the Supabase session, extracts the email claim, and returns the matching active `employees` row (or throws `ERR_NO_EMPLOYEE_PROFILE` when there is no match — the Route Handler then returns 403). This mapping is **application-only** — no equivalent SQL helper exists at the DB layer.
 - Zod schemas: `lib/validations/kudos.ts`, `lib/validations/uploads.ts`.
 
@@ -208,30 +208,32 @@ Detailed visual specs (colors, typography, spacing, node IDs, component states) 
 - **FR-009**: System MUST disable the **Gửi** button until Recipient, Danh hiệu, Message, and at least 1 Hashtag are all valid.
 - **FR-010**: System MUST display inline field-level errors (red border + message) on attempted submit with invalid data; errors MUST clear as the user corrects them.
 - **FR-011**: System MUST persist a draft to `sessionStorage` while the modal is open and restore it if the modal is reopened within the same session. The draft MUST capture: Recipient id; Danh hiệu as `{id}` or `{pendingLabel}` (for inline-create in progress); body ProseMirror JSON; hashtags as an ordered array of `{id}` or `{pendingLabel}`; image upload ids; `isAnonymous`; and `anonymousAlias`. On restore, if any referenced id (recipient, title, hashtag, upload) is no longer active the client MUST remove that entry and surface a non-blocking toast.
-- **FR-012**: System MUST debounce submit to prevent duplicate POSTs (single inflight request). The server-side Route Handler MUST also reject duplicate submissions within a 2-second window per `(author_id, recipient_id, body_hash)`.
+- **FR-012**: System MUST debounce submit to prevent duplicate POSTs: the **Gửi** button MUST stay disabled (and show a loading spinner) from the moment a submit fires until the response returns. No additional server-side dedup guard is required in v1 — the client-side inflight lock is sufficient. If post-launch telemetry shows duplicate submissions, revisit by adding a server-side fingerprint check.
 - **FR-013**: System MUST show a "Huỷ Kudo?" confirmation when the user cancels with unsaved changes.
 - **FR-014**: On successful submit, the system MUST close the modal, show a success toast, and call `router.refresh()` so the Next.js Server Component re-fetches the Kudos board and the new item appears at the top. **Supabase Realtime is out of scope** for v1 — full-page refresh is the sole update mechanism.
 - **FR-015**: The `Tiêu chuẩn cộng đồng` link MUST sit in the **toolbar row (C)**, right-aligned, and open the community-standards page in a new browser tab without disturbing the modal's state.
-- **FR-016**: Authorization is split between the **application layer** (Route Handlers) and **RLS at the database layer**. There is NO SQL helper resolving JWT email to an `employees.id` — per-row identity checks live in Route Handlers only.
+- **FR-016**: Authorization is **fully enforced at the API layer**. There is no Row Level Security, no SQL helper resolving JWT email to an `employees.id`, and no PL/pgSQL functions — Route Handlers under `app/api/` are the sole gatekeeper.
 
-  **Application layer (Route Handlers — primary enforcement)**: every Route Handler under `app/api/kudos/`, `app/api/uploads/`, `app/api/titles/`, `app/api/hashtags/`, and `app/api/employees/` MUST:
-    1. Call `getCurrentEmployee()` from `lib/auth/current-employee.ts` to resolve the authenticated user → active `employees` row. If the lookup fails, respond `403 { code: "NO_EMPLOYEE_PROFILE" }`.
-    2. Enforce identity rules explicitly before any mutation:
-       - `POST /api/kudos`: set `author_id = caller.id`; reject `recipient_id = caller.id` with 422.
+  **Every Route Handler** in `app/api/kudos/`, `app/api/uploads/`, `app/api/titles/`, `app/api/hashtags/`, and `app/api/employees/` MUST:
+    1. **Resolve identity.** Call `getCurrentEmployee()` from `lib/auth/current-employee.ts` at the top of the handler to turn the Supabase session cookie → active `employees` row. On failure respond `403 { code: "NO_EMPLOYEE_PROFILE" }`. Requests without a valid Supabase session are already rejected earlier by the session middleware, which short-circuits to `401`.
+    2. **Enforce identity rules explicitly before any mutation.**
+       - `POST /api/kudos`: set `author_id = caller.id`; reject `recipient_id = caller.id` with `422`.
        - `POST /api/uploads`: set `owner_id = caller.id`.
-       - `DELETE /api/uploads/[id]`: require `owner_id = caller.id` and no `kudo_images` reference.
+       - `DELETE /api/uploads/[id]`: require `owner_id = caller.id` AND no row in `kudo_images` referencing this upload; otherwise `403` or `409`.
+       - `GET /api/kudos` (public feed): filter to `status = 'published' AND deleted_at IS NULL` in application code; mask anonymous authors via `serializeKudo` (TR-005).
        - Admin-only operations (update / delete `titles`, `hashtags`, `kudos`; soft-delete `employees`): require `caller.is_admin = true`.
-    3. Perform all writes using the user's Supabase client (anon key + session cookie). The **service-role** client is NOT used by this feature.
+    3. **Use the authenticated user's Supabase client** (anon key + session cookie). The **service-role** client is NOT used by this feature.
+    4. **Validate input** with Zod (TR-004) and **sanitise rich-text** via `lib/kudos/sanitize-body.ts` (TR-006) before any write hits the database.
 
-  **Database layer (RLS — table-level gate)**. Every table has `ENABLE ROW LEVEL SECURITY`. Because identity-to-employee resolution is not available in SQL, RLS policies do NOT attempt per-row ownership checks — they grant table-level access to the `authenticated` role and let Route Handlers enforce the real identity logic. A client attempting direct table access without a valid session (i.e. with the `anon` role) is always denied.
-    - `kudos`:
-      - SELECT policy (`authenticated`): `USING (deleted_at IS NULL AND status = 'published')`.
-      - INSERT / UPDATE / DELETE policy (`authenticated`): `WITH CHECK (true)` — permissive at the DB layer; the Route Handler sets `author_id = caller.id` and blocks anything it shouldn't allow. Rationale: the anon-key session cannot call PostgREST directly because the Next.js app is the only client that ever mints this session server-side, and same-origin CSRF protection (TR-004) blocks cross-origin usage.
-    - `kudo_hashtags`, `kudo_images`, `kudo_mentions`: same INSERT-permissive policy for `authenticated` (Route Handlers create rows only after inserting the parent `kudos` row within the same transaction); SELECT on these tables goes through `GET /api/kudos`, never direct.
-    - `uploads`: SELECT restricted to Route Handlers (the client never reads `uploads` directly — it receives signed URLs in the Kudo payload). INSERT / DELETE: permissive for `authenticated`; the Route Handler sets `owner_id = caller.id` and prevents deletion of attached uploads.
-    - `titles`, `hashtags`: SELECT for `authenticated` on `deleted_at IS NULL`. INSERT permissive for `authenticated` (supports inline creation in FR-006 / FR-006a). UPDATE / DELETE: denied for `authenticated` (reserved for an admin role added later).
-    - `employees`: SELECT for `authenticated` on `deleted_at IS NULL`. INSERT / UPDATE / DELETE: denied for `authenticated` (reserved for admin ingest pipelines).
-  The `anon` role (unauthenticated) is denied on every table. RLS therefore gates "must be signed in" but trusts Route Handlers for fine-grained ownership.
+  **Transactional writes (POST /api/kudos).** With no RPC functions, `POST /api/kudos` runs a best-effort transactional chain in TypeScript using the Supabase JS client:
+    1. Resolve inline-create titles/hashtags via `upsert` + `ON CONFLICT (slug) DO NOTHING RETURNING id` (single round-trip per entity; race-safe).
+    2. `INSERT` into `kudos` → capture the new id.
+    3. Bulk `INSERT` into `kudo_hashtags`, `kudo_images` (when Phase 4 ships uploads), `kudo_mentions`.
+    4. If any step after the `kudos` insert fails, issue a compensating `DELETE FROM kudos WHERE id = ?` to roll back — assert no orphan children remain (the join tables use `ON DELETE CASCADE` so they clean up with the parent).
+    5. Bump `hashtags.usage_count` as a separate UPDATE — eventually consistent; a partial failure here leaves at most a stale counter.
+  This replaces what a database-side transaction or RPC would have provided. An integration test exercises the rollback path explicitly (tasks.md T048).
+
+  **Why no RLS / RPCs.** The anon-key Supabase session this feature uses is minted only by the Next.js server (`lib/supabase/server.ts`) inside same-origin Route Handlers. CSRF protection (TR-004) prevents cross-origin abuse of that session, so there is no threat model where a client bypasses the Route Handler layer and talks to PostgREST directly — the redundant DB-layer check RLS would provide adds no security over strong API-layer enforcement and costs migration complexity, debugging time, and schema churn. If future features expose Supabase directly to the browser (e.g. a realtime channel), RLS can be added then, scoped to those tables.
 - **FR-017**: **No submission rate limit** is enforced in this release. If abuse patterns emerge post-launch we will revisit; no throttling logic is required for v1.
 
 ### Technical Requirements
@@ -239,7 +241,7 @@ Detailed visual specs (colors, typography, spacing, node IDs, component states) 
 - **TR-001**: Modal open-to-interactive time MUST be ≤ 300 ms on Desktop and ≤ 500 ms on Mobile (3G throttled). Initial data (titles list, top hashtags, current user) MUST be fetched in a Server Component parent of the modal — never via `useEffect` on first load (constitution § II).
 - **TR-002**: Recipient autocomplete MUST debounce at 250 ms and cancel in-flight requests on new keystrokes.
 - **TR-003**: Image uploads MUST be parallelisable (up to 3 concurrent), show progress per thumbnail, and stream directly to Supabase Storage using a signed upload URL minted by `POST /api/uploads`.
-- **TR-004**: Submit Route Handler MUST validate every field with Zod, enforce RLS via the authenticated Supabase client, and reject JSON payloads > 512 KB (images are referenced by upload id, never inlined). CSRF protection MUST verify same-origin for Server Actions and Route Handlers.
+- **TR-004**: Submit Route Handler MUST validate every field with Zod, enforce all authorisation rules in application code (FR-016), and reject JSON payloads > 512 KB (images are referenced by upload id, never inlined). CSRF protection MUST verify same-origin for Server Actions and Route Handlers — this is the only guard preventing a cross-origin caller from driving the authenticated Supabase session, so it MUST be enabled on every mutating handler.
 - **TR-005**: Anonymity MUST be enforced **server-side at the application layer** (Route Handlers). The `GET /api/kudos` handler MUST resolve and return a flat, pre-computed pair:
   - `senderName`: `anonymous_alias` if present, else `"Ẩn danh"` when `is_anonymous = true`; otherwise the author's `employees.full_name`.
   - `senderAvatarUrl`: `null` when `is_anonymous = true`; otherwise the author's `avatar_url`.
@@ -293,7 +295,7 @@ All endpoints are implemented as **Next.js Route Handlers** under `app/api/` (Ap
 
 ### Where Supabase is used directly from the client
 
-- **None** for write paths — all writes go through the Route Handlers above so RLS and sanitisation run server-side.
+- **None** for write paths — all writes go through the Route Handlers above so authorisation, Zod validation, and rich-text sanitisation run server-side.
 - **Supabase Realtime is NOT used in v1.** After a successful submit, the client calls `router.refresh()` and the server re-fetches the Kudos board.
 
 ---
@@ -334,10 +336,8 @@ All endpoints are implemented as **Next.js Route Handlers** under `app/api/` (Ap
 - [x] Screen flow documented ([.momorph/SCREENFLOW.md](../../SCREENFLOW.md)) — Viết Kudo entry and transitions refreshed on 2026-04-20
 - [ ] **Supabase project provisioned** (dev + staging + production); envs set per constitution (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`)
 - [ ] **Supabase Storage bucket `kudo-images` created** as private, with Storage Policy: MIME ∈ `{image/jpeg, image/png, image/webp}`, size ≤ 5 MB/object, path prefix `{auth.uid()}/*`
-- [ ] **RLS policies** written and applied (FR-016); migration reviewed
-- [ ] Migration run applying `database-schema.sql` (includes the new `employees` master-data table, `kudos.anonymous_alias`, `titles.slug` + `created_by`, `hashtags.created_by`, CHECK constraints)
+- [ ] Migration run applying the four schema migrations (`employees`, `titles` + `hashtags`, `uploads`, `kudos` + join tables). No RLS / RPC / dedup-guard migrations are needed (FR-016).
 - [ ] `pg_trgm` extension enabled (used by the `employees` name autocomplete index)
-- [ ] Postgres helper functions `fn_insert_title_if_missing` / `fn_insert_hashtag_if_missing` deployed (used by `POST /api/kudos` transaction)
 - [ ] `employees` master-data seeded (HR / admin import or SSO sync) — an authenticated `auth.users` without a matching active `employees` row gets `403 { code: "NO_EMPLOYEE_PROFILE" }` from every Route Handler
 - [ ] Community-standards page published at target URL
 - [ ] Supabase Auth callback route ready at `/auth/callback` (PKCE flow)
@@ -350,9 +350,15 @@ All endpoints are implemented as **Next.js Route Handlers** under `app/api/` (Ap
 - The **`Tiêu chuẩn cộng đồng` link** is positioned at the **top-right of the toolbar row (C)**, not below the textarea. Earlier version of this spec incorrectly combined it with the `@mention` hint into a single "D.1" row — corrected in 2026-04-20 review.
 - The **anonymous alias input (G.1)** is a conditional text field, revealed only when the anonymous checkbox is checked (per design-item G description and frontend test IDs 43/44). It was missing from the initial spec — added in 2026-04-20 review. Schema impact: new `kudos.anonymous_alias TEXT` column.
 - Toolbar rendering uses a shared-border tile pattern — first button has `border-radius: 8px 0 0 0` and the textarea below has `0 0 8px 8px` so the editor reads as one continuous card.
-- Anonymity is **presentation-only** on the client; Supabase is the source of truth and must audit who authored each Kudo regardless of `is_anonymous`. Masking happens in the Route Handler (`lib/kudos/serialize-kudo.ts`) — the API response is the single boundary that the client ever sees, and it contains only `senderName` / `senderAvatarUrl` / `recipientName` / `recipientAvatarUrl` (never `author_id`). Because every client-facing fetch goes through a Route Handler (no direct `supabase.from('kudos').select('author_id')` from the browser), RLS does not need to attempt column-level masking; it only gates row visibility by `status`.
+- Anonymity is **presentation-only** on the client; Supabase is the source of truth and must audit who authored each Kudo regardless of `is_anonymous`. Masking happens in the Route Handler (`lib/kudos/serialize-kudo.ts`) — the API response is the single boundary that the client ever sees, and it contains only `senderName` / `senderAvatarUrl` / `recipientName` / `recipientAvatarUrl` (never `author_id`). Because every client-facing fetch goes through a Route Handler (the browser never calls `supabase.from('kudos').select('author_id')` directly), column-level masking at the DB is not required — the Route Handler is the single gate.
 - Draft persistence scope is intentionally `sessionStorage`, not `localStorage`, to avoid cross-device leaks.
 - Related frames to cross-reference during implementation: `Viet KUDO - Loi chua dien du` (validation-error sub-state), `Man Sua bai viet` (edit flow), `Kudos Board` (destination).
+
+### Architecture revision history
+
+- **rev 3 (2026-04-20)** — Removed **all DB-layer authorisation and transactional machinery**: no Row Level Security policies, no `fn_create_kudo` / `fn_insert_*` RPC functions, and no `kudo_submit_guard` dedup table. The API layer (Next.js Route Handlers calling `getCurrentEmployee()`) is the sole gatekeeper; FR-016 now describes a TypeScript transactional chain with compensating rollback. FR-012 drops the server-side 2-second window and keeps the client-side button-disable lock only. **Rationale**: the anon-key Supabase session is minted only by the Next.js server inside same-origin Route Handlers; CSRF protection (TR-004) prevents cross-origin abuse, so RLS would double-gate the same code path without adding real security. Simpler schema, fewer migrations, less debugging.
+- **rev 2 (2026-04-20)** — Moved RLS / RPC / submit-guard migrations from Phase 2 → Phase 3 (superseded by rev 3).
+- **rev 1 (2026-04-20)** — Initial approved spec.
 
 ### Resolved Questions *(2026-04-20 review round 2)*
 
@@ -362,7 +368,7 @@ All previously open questions were answered by product / engineering. Resolution
 |---|---|---|
 | Q1–Q2 | `anonymous_alias` scope & length | **In-scope feature**, optional, **max 60 chars** (FR-008b) |
 | Q3 | Multi-recipient | **One recipient only**. `@mention` is supported for acknowledgement, but **notification is out of scope** in v1 (FR-005) |
-| Q4 | Danh hiệu / hashtag curation | **User-generated**, inline creation in the picker (FR-006, FR-006a). Admins still manage deprecation via RLS |
+| Q4 | Danh hiệu / hashtag curation | **User-generated**, inline creation in the picker (FR-006, FR-006a). Admin curation happens out-of-band via admin-role Route Handlers (future scope) — no RLS. |
 | Q5 | Rate limiting | **No rate limit** in v1 (FR-017 rewritten) |
 | Q6 | Self-moderation (author hide) | **Out of scope** (Out of Scope section) |
 | Q7 | Realtime board updates | **No Realtime**; `router.refresh()` on submit (FR-014) |

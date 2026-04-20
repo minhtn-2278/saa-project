@@ -27,6 +27,11 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(""),
+}));
+
 const { FloatingActionButton } = await import(
   "@/components/shared/FloatingActionButton"
 );
@@ -67,7 +72,7 @@ describe("FloatingActionButton", () => {
     fireEvent.click(screen.getByLabelText("Quick actions"));
 
     const kudoLink = screen.getByText("Viết Kudo");
-    expect(kudoLink.closest("a")).toHaveAttribute("href", "/kudos/write");
+    expect(kudoLink.closest("a")?.getAttribute("href")).toContain("write=kudo");
   });
 
   it("'Thể lệ' links to /rules", () => {

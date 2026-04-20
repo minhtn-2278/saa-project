@@ -118,6 +118,15 @@ file_size_limit = "50MiB"
 # allowed_mime_types = ["image/png", "image/jpeg"]
 # objects_path = "./images"
 
+# Write-Kudo image attachments (feature: Viết Kudo, screen ihQ26W78P2).
+# Private bucket — reads go through short-lived signed URLs minted by
+# the Route Handler. See plan.md § Phase 2 / spec FR-007 / TR-008 / TR-011.
+[storage.buckets.kudo-images]
+public = false
+file_size_limit = "5MiB"
+allowed_mime_types = ["image/jpeg", "image/png", "image/webp"]
+objects_path = "./kudo-images"
+
 # Allow connections via S3 compatible clients
 [storage.s3_protocol]
 enabled = true
