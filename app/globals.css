@@ -26,6 +26,30 @@
 
   /* Prelaunch countdown — semantic alias for the LED cell border */
   --color-accent-gold: #FFEA9E;
+
+  /* ========================================================================
+   * Viết Kudo (Write Kudo) modal — tokens from design-style.md
+   * Screen ihQ26W78P2. See .momorph/specs/ihQ26W78P2-viet-kudo/design-style.md
+   * ====================================================================== */
+
+  /* Colors */
+  --color-kudo-modal-bg: #FFF8E1;          /* cream modal surface */
+  --color-kudo-primary: #FFEA9E;           /* gold accent — Gửi button */
+  --color-kudo-input-bg: #FFFFFF;          /* input / select / textarea */
+  --color-kudo-border: #998C5F;            /* inputs, buttons, thumbnails */
+  --color-kudo-text-primary: #00101A;      /* titles, labels */
+  --color-kudo-text-placeholder: #999999;  /* placeholder / hint */
+  --color-kudo-required: #CF1322;          /* required asterisk */
+  --color-kudo-link-community: #E46060;    /* Tiêu chuẩn cộng đồng link */
+
+  /* Fonts */
+  --font-noto-sans-jp: "Noto Sans JP", sans-serif;
+
+  /* Radii */
+  --radius-kudo-sm: 4px;                   /* cancel button */
+  --radius-kudo-md: 8px;                   /* inputs, textarea, submit */
+  --radius-kudo-lg: 18px;                  /* image thumbnails */
+  --radius-kudo-modal: 24px;               /* modal container */
 }
 
 @layer utilities {

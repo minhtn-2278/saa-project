@@ -1,0 +1,99 @@
+erDiagram
+    employees ||--o{ kudos : "authors"
+    employees ||--o{ kudos : "receives"
+    employees ||--o{ uploads : "owns"
+    employees ||--o{ kudo_mentions : "mentioned_in"
+
+    titles ||--o{ kudos : "labels"
+
+    kudos ||--o{ kudo_hashtags : "tagged_with"
+    hashtags ||--o{ kudo_hashtags : "applied_to"
+
+    kudos ||--o{ kudo_images : "has"
+    uploads ||--o{ kudo_images : "used_as"
+
+    kudos ||--o{ kudo_mentions : "contains"
+
+    employees {
+        bigint id PK
+        varchar email
+        varchar full_name
+        varchar employee_code
+        varchar department
+        varchar job_title
+        varchar avatar_url
+        boolean is_admin
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    titles {
+        bigint id PK
+        varchar name
+        varchar slug UK
+        text description
+        varchar icon
+        integer sort_order
+        bigint created_by FK
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    hashtags {
+        bigint id PK
+        varchar label
+        varchar slug UK
+        bigint usage_count
+        bigint created_by FK
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    uploads {
+        bigint id PK
+        bigint owner_id FK
+        varchar storage_key
+        varchar mime_type
+        bigint byte_size
+        integer width
+        integer height
+        timestamptz created_at
+        timestamptz deleted_at
+    }
+
+    kudos {
+        bigint id PK
+        bigint author_id FK
+        bigint recipient_id FK
+        bigint title_id FK
+        jsonb body
+        text body_plain
+        boolean is_anonymous
+        text anonymous_alias
+        varchar status
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    kudo_hashtags {
+        bigint kudo_id PK_FK
+        bigint hashtag_id PK_FK
+        timestamptz created_at
+    }
+
+    kudo_images {
+        bigint kudo_id PK_FK
+        bigint upload_id PK_FK
+        smallint position
+        timestamptz created_at
+    }
+
+    kudo_mentions {
+        bigint kudo_id PK_FK
+        bigint employee_id PK_FK
+        timestamptz created_at
+    }

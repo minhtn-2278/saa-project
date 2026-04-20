@@ -33,7 +33,7 @@
 | 4 | He thong giai (Award System) | zFYDgyj_pD | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=zFYDgyj_pD) | discovered (spec'd) | GET /awards, GET /awards/:id, GET /users/me, GET /notifications | Homepage SAA, Sun*Kudos Live board, The le, Dropdown-ngon ngu, Notification dropdown, Dropdown-profile |
 | 5 | Sun* Kudos - Live board | MaZUn5xHXZ | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=MaZUn5xHXZ) | discovered | GET /kudos, GET /kudos/filter | Viet Kudo, View Kudo, Profile nguoi khac, Dropdown Hashtag filter, Dropdown Phong ban |
 | 6 | D1_Sunkudos | QJd9jB9PDt | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=QJd9jB9PDt) | discovered | GET /kudos | Sun*Kudos Live board |
-| 7 | Viet Kudo (Write Kudo) | ihQ26W78P2 | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=ihQ26W78P2) | discovered | POST /kudos, GET /users/search | Sun*Kudos Live board, Dropdown list hashtag, Dropdown list nguoi nhan |
+| 7 | Viet Kudo (Write Kudo) | ihQ26W78P2 | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=ihQ26W78P2) | discovered | POST /kudos, GET /users/search, GET /hashtags, POST /uploads (images) | Sun*Kudos Live board (on Submit / Cancel), Tieu chuan cong dong, Dropdown list nguoi nhan, Dropdown list hashtag, An danh (anonymous toggle), Viet KUDO - Loi chua dien du (validation error) |
 | 8 | Viet KUDO - Loi chua dien du | 5c7PkAibyD | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=5c7PkAibyD) | discovered | - | Viet Kudo |
 | 9 | View Kudo | onDIohs2bS | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=onDIohs2bS) | discovered | GET /kudos/:id | Sun*Kudos Live board, Profile nguoi khac |
 | 10 | Gui loi chuc Kudos (Send Kudo - variant 1) | JsTvi8KVQA | [Link](https://www.figma.com/design/9ypp4enmFmdK3YAFJLIu6C?node-id=JsTvi8KVQA) | discovered | POST /kudos | Sun*Kudos Live board |
@@ -191,8 +191,10 @@ flowchart TD
     KudosBoard --> ViewKudo
     KudosBoard --> OtherProfile
 
-    WriteKudo -->|"Submit"| KudosBoard
-    WriteKudo --> CommunityStd
+    WriteKudo -->|"Submit (success) / Cancel"| KudosBoard
+    WriteKudo -->|"Tieu chuan cong dong link"| CommunityStd
+    WriteKudo -->|"Toggle An danh"| Homepage
+    WriteKudo -->|"Validation error (empty required)"| KudosBoard
     ViewKudo --> OtherProfile
     ViewKudo --> KudosBoard
 
@@ -296,7 +298,7 @@ flowchart TD
 ### Group: Kudos
 | Screen | Purpose | Entry Points |
 |--------|---------|--------------|
-| Viet Kudo (ihQ26W78P2) | Write and submit a new kudo | Kudos board, Floating Action Button, Profile |
+| Viet Kudo (ihQ26W78P2) | Modal form to compose and submit a new Kudo: select recipient (Người nhận, searchable), set title/Danh hieu, write rich-text message with @mention, pick up to 5 hashtags, attach up to 5 images, optional anonymous send. Links to community standards. | Kudos board "Viet Kudo" CTA, Floating Action Button, Profile nguoi khac "Gui loi chuc", Homepage SAA |
 | View Kudo (onDIohs2bS) | View a single kudo detail | Kudos board, Notifications |
 | Gui loi chuc Kudos (JsTvi8KVQA) | Send kudos greeting | Profile nguoi khac, Kudos board |
 | Man Sua bai viet (419VXmMy6I) | Edit existing kudo post | View Kudo (own post) |
@@ -371,6 +373,7 @@ flowchart TD
 | /giftbox/open | POST | Open Giftbox | Open giftbox reward |
 | /rules | GET | The le | Get event rules |
 | /community-standards | GET | Tieu chuan cong dong | Get community standards |
+| /uploads | POST | Viet Kudo, Man Sua bai viet | Upload attached images (max 5 per kudo) |
 | /hashtags | GET | Dropdown Hashtag filter, Dropdown list hashtag | List available hashtags |
 | /departments | GET | Dropdown Phong ban, Dropdown list phong ban | List departments |
 | /admin/overview | GET | Admin - Overview | Admin dashboard stats |
@@ -475,6 +478,7 @@ flowchart LR
 | 2026-04-15 | API endpoint prediction | 35 endpoints | Predicted REST API endpoints from screen interactions |
 | 2026-04-17 | Screen spec created | He thong giai (zFYDgyj_pD) | Detailed screen spec generated at `.momorph/contexts/screen_specs/he-thong-giai.md`; mapped header/footer navigations, 6 award cards, Sun*Kudos promo CTA, anchor-scroll left menu |
 | 2026-04-17 | Screen spec created | Countdown - Prelaunch (8PJQswPZmU) | Detailed screen spec at `.momorph/contexts/screen_specs/countdown-prelaunch.md`. Captured as **GLOBAL PRE-ENTRY GATEKEEPER** - precedes ALL other screens while `now < NEXT_PUBLIC_LAUNCH_DATE` (configured in `.env`). Implemented via Next.js `middleware.ts`. LED-styled DAYS/HOURS/MINUTES countdown over hero background. Auto-redirects to Login/Homepage when countdown reaches zero. Updated navigation graph to show gate-edges to all main screens. |
+| 2026-04-20 | Screen entry refined | Viet Kudo (ihQ26W78P2) | Refined SCREENFLOW entry from Figma frame. Modal form with 5 input groups: Nguoi nhan (searchable recipient), Danh hieu (title text), rich-text message editor (B/I/S/list/link/quote, @mention), Hashtag picker (max 5), Image upload (max 5), anonymous checkbox. Actions: Huy (Cancel) / Gui (Submit). Extended predicted APIs (added GET /hashtags, POST /uploads) and outbound navigations (Tieu chuan cong dong link, An danh toggle, validation error sub-state). Added /uploads endpoint to API summary. |
 
 ---
 

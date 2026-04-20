@@ -1,0 +1,675 @@
+openapi: 3.0.3
+info:
+  title: "SAA 2025 — Kudos API"
+  description: |
+    API specification for the **Viết Kudo** (Write Kudo) feature of the
+    Sun* Awards Annual 2025 platform. Endpoints here back the modal on screen
+    `ihQ26W78P2`: recipient search, Danh hiệu & hashtag master lists,
+    image upload, `@mention` suggestions, and Kudo creation.
+
+    ## Authentication
+    All endpoints (except `GET /health`) require a JWT Bearer token issued by
+    `POST /auth/login` (defined in the auth/login feature's spec).
+    ```
+    Authorization: Bearer <token>
+    ```
+
+    ## Error Responses
+    All endpoints return errors in the following format:
+    ```json
+    {
+      "error": {
+        "code": "ERROR_CODE",
+        "message": "Human readable message",
+        "details": {}
+      }
+    }
+    ```
+
+    ## Anonymity
+    The `isAnonymous` flag on `POST /kudos` is enforced **server-side**.
+    The public `GET /kudos` payload omits the author's identity when
+    `isAnonymous=true`; the database still retains `author_id` for moderation.
+  version: "1.0.0"
+  contact:
+    name: "SAA Platform Team"
+    email: "saa-platform@sun-asterisk.com"
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Development server
+  - url: https://staging.saa.sun-asterisk.com/api/v1
+    description: Staging server
+  - url: https://saa.sun-asterisk.com/api/v1
+    description: Production server
+
+tags:
+  - name: Kudos
+    description: Create and read Kudo posts
+  - name: Titles
+    description: Danh hiệu (honorary title) master list
+  - name: Hashtags
+    description: Hashtag master list
+  - name: Uploads
+    description: Image upload used by Kudo attachments
+  - name: Employees
+    description: Employee search & mention suggestions
+
+paths:
+  # ============================================
+  # Kudos
+  # ============================================
+  /kudos:
+    post:
+      tags: [Kudos]
+      summary: Create a Kudo
+      description: |
+        Create a new Kudo with a single recipient, a Danh hiệu (title), a rich-text
+        message body, 1–5 hashtags, 0–5 image attachments, and an optional
+        anonymity flag. All required validations run server-side.
+      operationId: createKudo
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateKudoRequest"
+            examples:
+              full:
+                summary: All fields populated
+                value:
+                  recipientId: 1024
+                  titleId: 7
+                  body:
+                    type: doc
+                    content:
+                      - type: paragraph
+                        content:
+                          - { type: text, text: "Cảm ơn bạn đã giúp đỡ " }
+                          - { type: mention, attrs: { id: 1088, label: "Nguyen Van A" } }
+                  hashtags: [{ id: 12 }, { id: 34 }]
+                  imageIds: [901, 902]
+                  isAnonymous: false
+              anonymous:
+                summary: Anonymous kudo
+                value:
+                  recipientId: 1024
+                  titleId: 7
+                  body: { type: doc, content: [{ type: paragraph, content: [{ type: text, text: "Cảm ơn bạn" }] }] }
+                  hashtags: [{ id: 12 }]
+                  imageIds: []
+                  isAnonymous: true
+                  anonymousAlias: "Thỏ 7 màu"
+      responses:
+        "201":
+          description: Kudo created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KudoResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+    get:
+      tags: [Kudos]
+      summary: List Kudos (board feed)
+      description: |
+        Paginated list of published Kudos for the board. Author identity is
+        masked for kudos where `isAnonymous=true`.
+      operationId: listKudos
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
+        - name: titleId
+          in: query
+          schema: { type: integer, format: int64 }
+          description: Filter by Danh hiệu
+        - name: hashtagId
+          in: query
+          schema: { type: integer, format: int64 }
+          description: Filter by hashtag
+      responses:
+        "200":
+          description: Paginated Kudos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KudoListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ============================================
+  # Titles (Danh hiệu)
+  # ============================================
+  /titles:
+    get:
+      tags: [Titles]
+      summary: List active Danh hiệu
+      description: Active honorary titles, ordered by `sort_order`.
+      operationId: listTitles
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of active titles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TitleListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ============================================
+  # Hashtags
+  # ============================================
+  /hashtags:
+    get:
+      tags: [Hashtags]
+      summary: Search / list hashtags
+      description: |
+        Active hashtags. Without `q`, returns the most-used hashtags; with `q`,
+        prefix-matches on the normalized slug.
+      operationId: listHashtags
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+          description: Case-insensitive prefix on the normalized label
+        - $ref: "#/components/parameters/LimitParam"
+      responses:
+        "200":
+          description: Matching hashtags
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HashtagListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ============================================
+  # Uploads (image attachments)
+  # ============================================
+  /uploads:
+    post:
+      tags: [Uploads]
+      summary: Upload an image
+      description: |
+        Upload a single image (JPG / PNG / WebP, ≤ 5 MB). Returns an `id` to
+        reference from `POST /kudos` and a short-lived signed URL for preview.
+      operationId: createUpload
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: JPG / PNG / WebP, ≤ 5 MB
+      responses:
+        "201":
+          description: Upload created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /uploads/{id}:
+    delete:
+      tags: [Uploads]
+      summary: Remove an uploaded image
+      description: Delete an upload that hasn't been attached to a Kudo yet.
+      operationId: deleteUpload
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Upload deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Upload is already attached to a Kudo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ============================================
+  # Employees (recipient search + @mention suggestions)
+  # ============================================
+  /employees/search:
+    get:
+      tags: [Employees]
+      summary: Search employees
+      description: |
+        Single endpoint for two UI surfaces:
+        - **Recipient picker** — call with `ignore_caller=true` (default) to hide
+          the current user from results.
+        - **@mention popover** — call with `ignore_caller=false` so the caller
+          may also be suggested.
+
+        Matches `q` against `full_name` (case-insensitive, diacritic-tolerant
+        prefix via pg_trgm) and `email`. Soft-deleted accounts are always
+        excluded.
+      operationId: searchEmployees
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          description: Name / email query (whitespace trimmed)
+        - name: ignore_caller
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: true
+          description: |
+            When `true` (default), excludes the authenticated caller from the
+            result set — use this for the Recipient field.
+            When `false`, includes the caller — use this for the `@mention`
+            suggestion popover.
+        - $ref: "#/components/parameters/LimitParam"
+      responses:
+        "200":
+          description: Matching employees
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeeListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+components:
+  # ============================================
+  # Security Schemes
+  # ============================================
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token issued by /auth/login
+
+  # ============================================
+  # Reusable Parameters
+  # ============================================
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+      description: Resource ID
+
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Page number
+
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Items per page
+
+  # ============================================
+  # Reusable Responses
+  # ============================================
+  responses:
+    Unauthorized:
+      description: Authentication required or invalid
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          example:
+            error:
+              code: "UNAUTHORIZED"
+              message: "Invalid or expired token"
+
+    Forbidden:
+      description: Permission denied
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          example:
+            error:
+              code: "FORBIDDEN"
+              message: "You cannot modify this resource"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          example:
+            error:
+              code: "NOT_FOUND"
+              message: "Resource not found"
+
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ValidationErrorResponse" }
+          example:
+            error:
+              code: "VALIDATION_ERROR"
+              message: "Validation failed"
+              details:
+                recipientId: ["Required"]
+                hashtagIds: ["Must contain 1–5 items"]
+
+    PayloadTooLarge:
+      description: Uploaded file exceeds the 5 MB per-file limit
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          example:
+            error:
+              code: "PAYLOAD_TOO_LARGE"
+              message: "File exceeds 5 MB"
+
+    UnsupportedMediaType:
+      description: Unsupported file type (only JPG / PNG / WebP allowed)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          example:
+            error:
+              code: "UNSUPPORTED_MEDIA_TYPE"
+              message: "Only JPG, PNG, or WebP images are allowed"
+
+  # ============================================
+  # Schemas
+  # ============================================
+  schemas:
+    # --- Shared ---
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+
+    ValidationErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, details]
+          properties:
+            code: { type: string, example: "VALIDATION_ERROR" }
+            message: { type: string }
+            details:
+              type: object
+              additionalProperties:
+                type: array
+                items: { type: string }
+
+    PaginationMeta:
+      type: object
+      properties:
+        page: { type: integer }
+        limit: { type: integer }
+        total: { type: integer }
+        totalPages: { type: integer }
+
+    # --- Employee ---
+    EmployeeSummary:
+      type: object
+      description: |
+        Employee record surfaced by `/employees/search`. Fields mirror the
+        `employees` master-data table (see database-schema.sql).
+        On anonymous Kudo payloads the author's EmployeeSummary is NOT
+        returned — the Kudo response carries pre-resolved `senderName` and
+        `senderAvatarUrl` only.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Primary key of the employees master-data table
+          example: 1024
+        fullName: { type: string, example: "Nguyễn Văn A" }
+        email: { type: string, format: email }
+        employeeCode: { type: string, nullable: true, example: "SA-01234" }
+        department: { type: string, nullable: true, example: "Engineering" }
+        jobTitle: { type: string, nullable: true, example: "Senior Engineer" }
+        avatarUrl: { type: string, format: uri, nullable: true }
+
+    EmployeeListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/EmployeeSummary" }
+
+    # --- Title (Danh hiệu) ---
+    Title:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string, example: "Người truyền động lực cho tôi" }
+        description: { type: string, nullable: true }
+        icon: { type: string, nullable: true }
+        sortOrder: { type: integer }
+
+    TitleListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Title" }
+
+    # --- Hashtag ---
+    Hashtag:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        label: { type: string, example: "TeamWork" }
+        slug: { type: string, example: "teamwork" }
+        usageCount: { type: integer }
+
+    HashtagListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Hashtag" }
+
+    # --- Upload ---
+    Upload:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        url:
+          type: string
+          format: uri
+          description: Short-lived signed URL for preview
+        mimeType:
+          type: string
+          enum: [image/jpeg, image/png, image/webp]
+        byteSize: { type: integer }
+        width: { type: integer, nullable: true }
+        height: { type: integer, nullable: true }
+        expiresAt: { type: string, format: date-time }
+
+    UploadResponse:
+      type: object
+      properties:
+        data: { $ref: "#/components/schemas/Upload" }
+
+    # --- Kudo ---
+    CreateKudoRequest:
+      type: object
+      required: [recipientId, body, hashtags]
+      properties:
+        recipientId:
+          type: integer
+          format: int64
+          description: Employee id from the employees master table; must not equal caller
+        titleId:
+          type: integer
+          format: int64
+          nullable: true
+          description: Existing Danh hiệu id. Either this OR `titleName` must be set.
+        titleName:
+          type: string
+          minLength: 2
+          maxLength: 60
+          nullable: true
+          description: New Danh hiệu label to create inline. Mutually exclusive with `titleId`.
+        body:
+          type: object
+          description: |
+            Rich-text content in ProseMirror JSON. Server validates schema and
+            strips disallowed nodes (script, inline event handlers, non-allowlisted
+            hrefs). `body_plain` is derived server-side for indexing / previews.
+        hashtags:
+          type: array
+          minItems: 1
+          maxItems: 5
+          description: |
+            Array of hashtag references. Each element is either an existing id
+            (`{id: 12}`) OR a new label to create inline (`{label: "team-work"}`).
+            Labels are normalised server-side (lowercase, 2–32 chars, alphanumeric
+            + Vietnamese unicode letters + digits + underscore; no `#` prefix, no
+            spaces).
+          items:
+            oneOf:
+              - type: object
+                required: [id]
+                properties:
+                  id: { type: integer, format: int64 }
+              - type: object
+                required: [label]
+                properties:
+                  label: { type: string, minLength: 2, maxLength: 32 }
+        imageIds:
+          type: array
+          minItems: 0
+          maxItems: 5
+          uniqueItems: true
+          items: { type: integer, format: int64 }
+          description: Upload ids returned by POST /uploads, ordered by insertion
+        isAnonymous:
+          type: boolean
+          default: false
+        anonymousAlias:
+          type: string
+          maxLength: 60
+          nullable: true
+          description: |
+            Optional display name used in place of the author when `isAnonymous=true`.
+            Trimmed server-side; empty or omitted falls back to "Ẩn danh".
+            Ignored when `isAnonymous=false`.
+
+    Kudo:
+      type: object
+      description: |
+        Response shape is intentionally flat for sender/recipient — `senderName`,
+        `senderAvatarUrl`, `recipientName`, `recipientAvatarUrl` are pre-resolved
+        by the server (see TR-005). No raw `author` object is exposed; `author_id`
+        is never included.
+      properties:
+        id: { type: integer, format: int64 }
+        senderName:
+          type: string
+          description: |
+            `anonymous_alias` if set, else `"Ẩn danh"` when `isAnonymous=true`;
+            otherwise the author's full name.
+        senderAvatarUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: "null when isAnonymous=true; otherwise author avatar"
+        recipientId: { type: integer, format: int64 }
+        recipientName: { type: string }
+        recipientAvatarUrl:
+          type: string
+          format: uri
+          nullable: true
+        title: { $ref: "#/components/schemas/Title" }
+        body:
+          type: object
+          description: ProseMirror JSON (sanitized)
+        bodyPlain: { type: string }
+        hashtags:
+          type: array
+          items: { $ref: "#/components/schemas/Hashtag" }
+        images:
+          type: array
+          items: { $ref: "#/components/schemas/Upload" }
+        mentions:
+          type: array
+          description: |
+            Mentioned employees (for rendering profile links in the body). No
+            notifications are sent to these users in v1.
+          items: { $ref: "#/components/schemas/EmployeeSummary" }
+        isAnonymous: { type: boolean }
+        status:
+          type: string
+          enum: [published, hidden, reported]
+        createdAt: { type: string, format: date-time }
+
+    KudoResponse:
+      type: object
+      properties:
+        data: { $ref: "#/components/schemas/Kudo" }
+
+    KudoListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Kudo" }
+        meta: { $ref: "#/components/schemas/PaginationMeta" }

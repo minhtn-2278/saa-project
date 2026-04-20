@@ -141,5 +141,92 @@
   "prelaunch": {
     "title": "Event starts in",
     "srSummary": "{days} days, {hours} hours, {minutes} minutes remaining"
+  },
+  "kudos": {
+    "writeKudo": {
+      "_TODO": "Translation pending (Q-P5).",
+      "title": "Send thanks and recognition to your teammate",
+      "openCta": "Write Kudo",
+      "fields": {
+        "recipient": {
+          "label": "Recipient",
+          "placeholder": "Search"
+        },
+        "title": {
+          "label": "Title",
+          "placeholder": "Award a title to your teammate",
+          "hint": "e.g. A person who inspires me.\nThe title appears as the Kudo headline."
+        },
+        "body": {
+          "placeholder": "Share your thanks and recognition with your teammate here!",
+          "mentionHint": "Type \"@ + name\" to mention a colleague"
+        },
+        "hashtag": {
+          "label": "Hashtag",
+          "addCta": "Hashtag",
+          "maxHint": "Max 5"
+        },
+        "image": {
+          "label": "Image",
+          "addCta": "Image",
+          "maxHint": "Max 5"
+        },
+        "anonymous": {
+          "toggleLabel": "Send thanks and recognition anonymously",
+          "aliasLabel": "Alias",
+          "aliasPlaceholder": "Enter the display name to show when sending anonymously",
+          "aliasFallback": "Anonymous"
+        }
+      },
+      "actions": {
+        "cancel": "Cancel",
+        "submit": "Send",
+        "communityStandards": "Community standards",
+        "communityStandardsAria": "Open community standards in a new tab",
+        "createNew": "Create new: \"{label}\""
+      },
+      "cancelConfirm": {
+        "title": "Cancel Kudo?",
+        "message": "Your changes will be lost.",
+        "confirm": "Confirm cancel",
+        "abort": "Keep editing"
+      },
+      "toasts": {
+        "success": "Kudo sent",
+        "failure": "Send failed, please try again",
+        "draftStale": "Some draft entries are no longer available and were removed"
+      },
+      "errors": {
+        "recipient": {
+          "required": "Please choose a recipient",
+          "notFound": "Recipient not found or inactive",
+          "self": "You cannot send a Kudo to yourself"
+        },
+        "title": {
+          "required": "Please choose or create a title",
+          "length": "Title must be between 2 and 60 characters"
+        },
+        "body": {
+          "required": "Please enter a message",
+          "maxLength": "Maximum 5000 characters"
+        },
+        "hashtag": {
+          "required": "Choose or create at least 1 hashtag",
+          "max": "Maximum of 5 hashtags reached",
+          "charset": "Hashtag: letters, digits, and underscore only, up to 32 characters"
+        },
+        "image": {
+          "invalid": "Invalid image (JPG/PNG/WebP ≤ 5 MB)",
+          "uploadFailed": "Upload failed, please try again"
+        },
+        "anonymousAlias": {
+          "maxLength": "Maximum 60 characters"
+        },
+        "generic": {
+          "noEmployeeProfile": "Your account is not enabled for Kudos. Please contact an admin.",
+          "timeout": "Request timed out, please try again"
+        }
+      }
+    }
   }
 }

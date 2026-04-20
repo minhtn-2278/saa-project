@@ -141,5 +141,92 @@
   "prelaunch": {
     "title": "イベント開始まで",
     "srSummary": "残り {days}日 {hours}時間 {minutes}分"
+  },
+  "kudos": {
+    "writeKudo": {
+      "_TODO": "翻訳待ち (Q-P5)。",
+      "title": "チームメイトに感謝と称賛のメッセージを送る",
+      "openCta": "Kudoを書く",
+      "fields": {
+        "recipient": {
+          "label": "送信先",
+          "placeholder": "検索"
+        },
+        "title": {
+          "label": "称号",
+          "placeholder": "チームメイトに称号を贈る",
+          "hint": "例: 私にモチベーションをくれる人。\n称号はKudoの見出しとして表示されます。"
+        },
+        "body": {
+          "placeholder": "ここにチームメイトへの感謝と称賛をお書きください!",
+          "mentionHint": "「@ + 名前」で同僚をメンションできます"
+        },
+        "hashtag": {
+          "label": "ハッシュタグ",
+          "addCta": "ハッシュタグ",
+          "maxHint": "最大5件"
+        },
+        "image": {
+          "label": "画像",
+          "addCta": "画像",
+          "maxHint": "最大5件"
+        },
+        "anonymous": {
+          "toggleLabel": "匿名で感謝と称賛を送る",
+          "aliasLabel": "表示名",
+          "aliasPlaceholder": "匿名で送信する際の表示名を入力",
+          "aliasFallback": "匿名"
+        }
+      },
+      "actions": {
+        "cancel": "キャンセル",
+        "submit": "送信",
+        "communityStandards": "コミュニティ規約",
+        "communityStandardsAria": "コミュニティ規約を新しいタブで開く",
+        "createNew": "新規作成: 「{label}」"
+      },
+      "cancelConfirm": {
+        "title": "Kudoをキャンセル?",
+        "message": "変更内容は保存されません。",
+        "confirm": "キャンセルを確定",
+        "abort": "編集を続ける"
+      },
+      "toasts": {
+        "success": "Kudoを送信しました",
+        "failure": "送信に失敗しました。もう一度お試しください",
+        "draftStale": "下書きの一部が利用できなくなり、削除されました"
+      },
+      "errors": {
+        "recipient": {
+          "required": "送信先を選択してください",
+          "notFound": "送信先が見つからないか、無効になっています",
+          "self": "自分自身にKudoを送ることはできません"
+        },
+        "title": {
+          "required": "称号を選択または作成してください",
+          "length": "称号は2〜60文字で入力してください"
+        },
+        "body": {
+          "required": "メッセージを入力してください",
+          "maxLength": "最大5000文字"
+        },
+        "hashtag": {
+          "required": "1つ以上のハッシュタグを選択または作成してください",
+          "max": "最大5件のハッシュタグに達しました",
+          "charset": "ハッシュタグは英数字とアンダースコアのみ、最大32文字"
+        },
+        "image": {
+          "invalid": "無効な画像 (JPG/PNG/WebP ≤ 5 MB)",
+          "uploadFailed": "アップロードに失敗しました。もう一度お試しください"
+        },
+        "anonymousAlias": {
+          "maxLength": "最大60文字"
+        },
+        "generic": {
+          "noEmployeeProfile": "このアカウントはKudosで有効化されていません。管理者にお問い合わせください。",
+          "timeout": "タイムアウトしました。もう一度お試しください"
+        }
+      }
+    }
   }
 }

@@ -141,5 +141,91 @@
   "prelaunch": {
     "title": "Sự kiện sẽ bắt đầu sau",
     "srSummary": "Còn lại {days} ngày, {hours} giờ, {minutes} phút"
+  },
+  "kudos": {
+    "writeKudo": {
+      "title": "Gửi lời cám ơn và ghi nhận đến đồng đội",
+      "openCta": "Viết Kudo",
+      "fields": {
+        "recipient": {
+          "label": "Người nhận",
+          "placeholder": "Tìm kiếm"
+        },
+        "title": {
+          "label": "Danh hiệu",
+          "placeholder": "Dành tặng một danh hiệu cho đồng đội",
+          "hint": "Ví dụ: Người truyền động lực cho tôi.\nDanh hiệu sẽ hiển thị làm tiêu đề Kudos của bạn."
+        },
+        "body": {
+          "placeholder": "Hãy gửi gắm lời cám ơn và ghi nhận đến đồng đội tại đây nhé!",
+          "mentionHint": "Bạn có thể \"@ + tên\" để nhắc tới đồng nghiệp khác"
+        },
+        "hashtag": {
+          "label": "Hashtag",
+          "addCta": "Hashtag",
+          "maxHint": "Tối đa 5"
+        },
+        "image": {
+          "label": "Image",
+          "addCta": "Image",
+          "maxHint": "Tối đa 5"
+        },
+        "anonymous": {
+          "toggleLabel": "Gửi lời cám ơn và ghi nhận ẩn danh",
+          "aliasLabel": "Tên ẩn danh",
+          "aliasPlaceholder": "Nhập tên hiển thị khi gửi ẩn danh",
+          "aliasFallback": "Ẩn danh"
+        }
+      },
+      "actions": {
+        "cancel": "Hủy",
+        "submit": "Gửi",
+        "communityStandards": "Tiêu chuẩn cộng đồng",
+        "communityStandardsAria": "Mở tiêu chuẩn cộng đồng trong tab mới",
+        "createNew": "Tạo mới: \"{label}\""
+      },
+      "cancelConfirm": {
+        "title": "Huỷ Kudo?",
+        "message": "Thay đổi sẽ không được lưu.",
+        "confirm": "Xác nhận huỷ",
+        "abort": "Giữ lại"
+      },
+      "toasts": {
+        "success": "Đã gửi Kudo",
+        "failure": "Gửi thất bại, vui lòng thử lại",
+        "draftStale": "Một số mục trong bản nháp không còn khả dụng đã được xoá"
+      },
+      "errors": {
+        "recipient": {
+          "required": "Vui lòng chọn người nhận",
+          "notFound": "Người nhận không tồn tại hoặc đã ngừng hoạt động",
+          "self": "Không thể gửi Kudo cho chính mình"
+        },
+        "title": {
+          "required": "Vui lòng chọn hoặc tạo danh hiệu",
+          "length": "Danh hiệu dài từ 2 đến 60 ký tự"
+        },
+        "body": {
+          "required": "Vui lòng nhập lời cám ơn",
+          "maxLength": "Tối đa 5000 ký tự"
+        },
+        "hashtag": {
+          "required": "Chọn hoặc tạo ít nhất 1 hashtag",
+          "max": "Đã đạt tối đa 5 hashtag",
+          "charset": "Hashtag chỉ gồm chữ, số và dấu gạch dưới, tối đa 32 ký tự"
+        },
+        "image": {
+          "invalid": "Ảnh không hợp lệ (JPG/PNG/WebP ≤ 5MB)",
+          "uploadFailed": "Tải ảnh thất bại, vui lòng thử lại"
+        },
+        "anonymousAlias": {
+          "maxLength": "Tối đa 60 ký tự"
+        },
+        "generic": {
+          "noEmployeeProfile": "Tài khoản của bạn chưa được kích hoạt cho Kudos. Vui lòng liên hệ quản trị viên.",
+          "timeout": "Gửi thất bại do mạng chậm, vui lòng thử lại"
+        }
+      }
+    }
   }
 }
