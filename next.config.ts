@@ -53,22 +53,45 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    // Supabase Storage signed URLs resolve to the project hostname; allow
+    // them as an `img-src` source. We avoid a wildcard — the Storage host is
+    // the only external origin the app loads media from.
+    const supabaseOrigin = (() => {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!url) return "https://*.supabase.co";
+      try {
+        return new URL(url).origin;
+      } catch {
+        return "https://*.supabase.co";
+      }
+    })();
+
+    const csp = [
+      "default-src 'self'",
+      // Next.js injects inline bootstrap scripts + CSS; dev mode also needs
+      // `'unsafe-eval'` for Turbopack HMR, so we relax in non-production.
+      process.env.NODE_ENV === "production"
+        ? "script-src 'self' 'unsafe-inline'"
+        : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      // `data:` covers base64 preview images emitted by some libs; `blob:`
+      // covers the in-memory previews the image uploader creates.
+      `img-src 'self' data: blob: ${supabaseOrigin}`,
+      "font-src 'self' data:",
+      `connect-src 'self' ${supabaseOrigin}`,
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join("; ");
+
     return [
       {
         source: "/(.*)",
         headers: [
-          {
-            key: "X-Frame-Options",
-            value: "DENY",
-          },
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
-          {
-            key: "Referrer-Policy",
-            value: "strict-origin-when-cross-origin",
-          },
+          { key: "Content-Security-Policy", value: csp },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
             key: "Strict-Transport-Security",
             value: "max-age=31536000; includeSubDomains",

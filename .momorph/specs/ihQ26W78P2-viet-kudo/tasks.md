@@ -297,17 +297,17 @@
 - [ ] T131 [P] Integrate `@axe-core/playwright`; add axe scan to every E2E spec | tests/e2e/_helpers/a11y.ts
 - [ ] T132 Manual keyboard-walk checklist documented + executed | .momorph/specs/ihQ26W78P2-viet-kudo/a11y-checklist.md
 - [ ] T133 [P] Verify `#E46060` link contrast → underline on hover + focus | components/kudos/WriteKudoModal/CommunityStandardsLink.tsx
-- [ ] T134 [P] Add `role="status"` live region for form-level error summary | components/kudos/WriteKudoModal/WriteKudoModal.tsx
+- [x] T134 [P] Add `role="status"` live region for form-level error summary | components/kudos/WriteKudoModal/WriteKudoModal.tsx
 
 ### Security hardening (TR-010)
 
-- [ ] T135 Add security headers (CSP with `img-src 'self' *.supabase.co`, X-Frame-Options, X-Content-Type-Options, HSTS) | next.config.ts
+- [x] T135 Add security headers (CSP with `img-src 'self' *.supabase.co`, X-Frame-Options, X-Content-Type-Options, HSTS) | next.config.ts
 - [ ] T136 Run `npm audit` and resolve any new critical/high findings | *(ops task — no file)*
 
 ### Toasts + observability
 
-- [ ] T137 Wire `sonner` toasts: success (`Đã gửi Kudo`), failure (`Gửi thất bại, vui lòng thử lại`), draft-stale purge | components/kudos/WriteKudoModal/WriteKudoModal.tsx
-- [ ] T138 [P] Add `console.error` + server log for `ERR_NO_EMPLOYEE_PROFILE` | lib/auth/current-employee.ts
+- [x] T137 Wire `sonner` toasts: success (`Đã gửi Kudo`), failure (`Gửi thất bại, vui lòng thử lại`), draft-stale purge | components/kudos/WriteKudoModal/WriteKudoModal.tsx
+- [x] T138 [P] Add `console.error` + server log for `ERR_NO_EMPLOYEE_PROFILE` | lib/auth/current-employee.ts
 
 ### Launch gate
 

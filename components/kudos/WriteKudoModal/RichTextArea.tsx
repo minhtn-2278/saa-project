@@ -93,8 +93,9 @@ export function RichTextArea({
         "aria-multiline": "true",
         "aria-labelledby": ariaLabelledBy ?? "",
         "aria-invalid": invalid ? "true" : "false",
-        class:
-          "prose prose-sm max-w-none outline-none min-h-[168px] [&_p]:m-0 [&_p]:min-h-[1.5rem]",
+        // Tailwind's typography plugin isn't installed; styles for this
+        // editor live in `app/globals.css` under `.kudo-editor`.
+        class: "kudo-editor",
       },
     },
   });

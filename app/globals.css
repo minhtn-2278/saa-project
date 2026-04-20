@@ -60,3 +60,166 @@
     display: none;
   }
 }
+
+/* ==========================================================================
+ * Viết Kudo modal — thin, themed vertical scrollbar.
+ * The default browser scrollbar shows a wide white gutter against the cream
+ * modal; this narrows it and blends the track into the modal surface.
+ * ========================================================================== */
+
+/*
+ * Auto-hide strategy: the scrollbar gutter is **always** reserved (via
+ * `scrollbar-gutter: stable` and a fixed `::-webkit-scrollbar` width) so that
+ * showing or hiding the thumb never shifts the layout inside the modal. By
+ * default the track + thumb paint transparent — the user sees no scrollbar.
+ * A small JS hook on `ModalShell` toggles `.is-scrolling` during active
+ * scroll (debounced off after 800 ms idle); only then does the olive thumb
+ * fade in. Hover does NOT reveal it (per user request).
+ *
+ * The up/down arrow buttons are explicitly shrunk to 0 px so Chrome on
+ * Windows can't render them.
+ */
+
+.kudo-modal-scroll {
+  /* Firefox — always `thin` (not `none`) so the reserved gutter width is
+     stable. The track/thumb are transparent until `.is-scrolling`. */
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  /* Cross-browser: reserve the scrollbar gutter even when no thumb is
+     visible. Prevents a 6px width pop when the thumb shows up. */
+  scrollbar-gutter: stable;
+}
+
+.kudo-modal-scroll::-webkit-scrollbar {
+  width: 6px;
+  background: transparent;
+}
+
+.kudo-modal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.kudo-modal-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+  transition: background 180ms ease;
+}
+
+/* Belt-and-braces kill of the up/down arrow buttons on Chrome/Windows. */
+.kudo-modal-scroll::-webkit-scrollbar-button,
+.kudo-modal-scroll::-webkit-scrollbar-button:vertical:start,
+.kudo-modal-scroll::-webkit-scrollbar-button:vertical:end,
+.kudo-modal-scroll::-webkit-scrollbar-button:vertical:start:increment,
+.kudo-modal-scroll::-webkit-scrollbar-button:vertical:start:decrement,
+.kudo-modal-scroll::-webkit-scrollbar-button:vertical:end:increment,
+.kudo-modal-scroll::-webkit-scrollbar-button:vertical:end:decrement {
+  display: none;
+  height: 0;
+  width: 0;
+  background: transparent;
+}
+
+/* Reveal ONLY while the JS hook says we're actively scrolling. */
+.kudo-modal-scroll.is-scrolling::-webkit-scrollbar-thumb {
+  background: rgba(153, 140, 95, 0.55);
+}
+
+.kudo-modal-scroll.is-scrolling {
+  scrollbar-color: rgba(153, 140, 95, 0.55) transparent;
+}
+
+/* ==========================================================================
+ * Viết Kudo — Tiptap rich-text area styles.
+ * Scoped to `.kudo-editor` so they don't leak into other editors elsewhere.
+ * The Tailwind `prose` plugin isn't installed, so we hand-style the handful
+ * of block elements the editor can emit (ul, li, a, blockquote, strong, em,
+ * s). Matches the design-style tokens declared above.
+ * ========================================================================== */
+
+.kudo-editor {
+  outline: none;
+  min-height: 168px;
+}
+
+.kudo-editor p {
+  margin: 0;
+  min-height: 1.5rem;
+}
+
+/* Bullet list — design requirement: show "-" marker at the start. */
+.kudo-editor ul {
+  list-style: none;
+  padding: 0;
+  margin: 0.25rem 0;
+}
+
+.kudo-editor ul > li {
+  position: relative;
+  padding-left: 1.25rem;
+}
+
+.kudo-editor ul > li::before {
+  content: "-";
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-weight: 700;
+  color: var(--color-kudo-text-primary);
+}
+
+.kudo-editor ul ul {
+  margin: 0.125rem 0 0.125rem 0.5rem;
+}
+
+/* Link — blue + underline, matches the explicit design request. */
+.kudo-editor a {
+  color: #1D4ED8;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.kudo-editor a:hover {
+  color: #1E3A8A;
+}
+
+/* Blockquote — left accent bar + italic + muted surface. */
+.kudo-editor blockquote {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0 0.5rem 1rem;
+  border-left: 4px solid var(--color-kudo-border);
+  background: rgba(153, 140, 95, 0.08);
+  color: var(--color-kudo-text-primary);
+  font-style: italic;
+  border-radius: 0 6px 6px 0;
+}
+
+.kudo-editor blockquote p {
+  margin: 0;
+}
+
+.kudo-editor strong {
+  font-weight: 700;
+}
+.kudo-editor em {
+  font-style: italic;
+}
+.kudo-editor s {
+  text-decoration: line-through;
+}
+
+/* Tiptap placeholder — the empty-doc hint the Placeholder extension shows. */
+.kudo-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--color-kudo-text-placeholder);
+  pointer-events: none;
+  height: 0;
+}
+
+/* Mention node — red accent matching the community-link colour. */
+.kudo-editor .mention {
+  color: var(--color-kudo-link-community);
+  font-weight: 700;
+  text-decoration: none;
+}

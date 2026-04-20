@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { ImageDraft } from "@/components/kudos/WriteKudoModal/hooks/useKudoForm";
 
 vi.mock("next-intl", () => ({
@@ -39,19 +39,15 @@ describe("ImageUploader", () => {
 
   function renderUploader(images: ImageDraft[] = []) {
     const onAdd = vi.fn();
-    const onUpdate = vi.fn();
-    const onRemoveById = vi.fn();
     const onRemoveByFile = vi.fn();
     render(
       <ImageUploader
         images={images}
         onAdd={onAdd}
-        onUpdate={onUpdate}
-        onRemoveById={onRemoveById}
         onRemoveByFile={onRemoveByFile}
       />,
     );
-    return { onAdd, onUpdate, onRemoveById, onRemoveByFile };
+    return { onAdd, onRemoveByFile };
   }
 
   it("renders the + Image button when below the 5-image limit", () => {
@@ -61,11 +57,8 @@ describe("ImageUploader", () => {
 
   it("hides the + Image button when images hit the max (5)", () => {
     const full: ImageDraft[] = Array.from({ length: 5 }).map((_, i) => ({
-      id: i + 1,
       file: new File([new Uint8Array([1])], `f${i}.jpg`, { type: "image/jpeg" }),
       previewUrl: "blob:fake",
-      status: "ready" as const,
-      expiresAt: null,
     }));
     renderUploader(full);
     expect(screen.queryByRole("button", { name: "Image" })).toBeNull();
@@ -83,25 +76,10 @@ describe("ImageUploader", () => {
     expect(onAdd).not.toHaveBeenCalled();
   });
 
-  it("starts an upload for a valid JPG", async () => {
-    const fetchMock = vi.fn().mockImplementation((url: string) => {
-      if (url.startsWith("/api/uploads")) {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            data: {
-              id: 123,
-              uploadUrl: "https://example.test/signed",
-              token: "tok",
-              signedReadUrl: "https://example.test/read",
-            },
-          }),
-        });
-      }
-      return Promise.resolve({ ok: true });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-    const { onAdd, onUpdate } = renderUploader();
+  it("adds a valid JPG as a local draft WITHOUT any network call", () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const { onAdd } = renderUploader();
     const input = screen
       .getByRole("button", { name: "Image" })
       .parentElement!.querySelector("input[type=file]") as HTMLInputElement;
@@ -110,16 +88,11 @@ describe("ImageUploader", () => {
     });
     fireEvent.change(input, { target: { files: [ok] } });
     expect(onAdd).toHaveBeenCalledTimes(1);
-    expect(onAdd.mock.calls[0][0]).toMatchObject({
-      id: -1,
-      status: "uploading",
-    });
-    await waitFor(() =>
-      expect(onUpdate).toHaveBeenCalledWith(
-        expect.any(File),
-        expect.objectContaining({ id: 123, status: "ready" }),
-      ),
-    );
+    const draft = onAdd.mock.calls[0][0] as ImageDraft;
+    expect(draft.file).toBe(ok);
+    expect(draft.previewUrl).toBe("blob:fake");
+    // Picking MUST NOT perform any upload — that moves to submit time.
+    expect(fetchSpy).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
 });

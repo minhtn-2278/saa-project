@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Editor } from "@tiptap/core";
 import { useTranslations } from "next-intl";
 import { ToolbarButton } from "./parts/ToolbarButton";
+import { CommunityStandardsLink } from "./CommunityStandardsLink";
 import { BoldIcon } from "@/components/ui/icons/BoldIcon";
 import { ItalicIcon } from "@/components/ui/icons/ItalicIcon";
 import { StrikethroughIcon } from "@/components/ui/icons/StrikethroughIcon";
@@ -14,12 +15,11 @@ import { QuoteIcon } from "@/components/ui/icons/QuoteIcon";
 interface EditorToolbarProps {
   editor: Editor | null;
   disabled?: boolean;
-  /** Right-aligned slot, typically the "Tiêu chuẩn cộng đồng" link. */
-  rightSlot?: React.ReactNode;
 }
 
 /**
- * Toolbar row (C) — 6 format buttons left, optional link right, space-between.
+ * Toolbar row (C) — 6 format buttons on the left + the "Tiêu chuẩn cộng đồng"
+ * link cell on the right, all inside one `h-10 justify-between` row.
  * Design-style: h:40, flex row, justify-between.
  *
  * Button states track the editor via `editor.isActive(...)`. We subscribe
@@ -28,7 +28,6 @@ interface EditorToolbarProps {
 export function EditorToolbar({
   editor,
   disabled,
-  rightSlot,
 }: EditorToolbarProps) {
   const t = useTranslations("kudos.writeKudo");
   const [, setTick] = useState(0);
@@ -66,7 +65,7 @@ export function EditorToolbar({
   };
 
   return (
-    <div className="flex flex-row justify-between items-center w-full h-10">
+    <div className="flex flex-row items-center w-full h-10">
       <div
         role="group"
         aria-label={t("title")}
@@ -118,7 +117,6 @@ export function EditorToolbar({
         <ToolbarButton
           active={isActive("blockquote")}
           ariaLabel="Blockquote"
-          position="last"
           disabled={disabled || !editor}
           onClick={() =>
             run(() => editor?.chain().focus().toggleBlockquote().run())
@@ -127,7 +125,7 @@ export function EditorToolbar({
           <QuoteIcon size={20} />
         </ToolbarButton>
       </div>
-      {rightSlot && <div className="ml-auto">{rightSlot}</div>}
+      <CommunityStandardsLink />
     </div>
   );
 }

@@ -18,14 +18,7 @@ export function AwardCard({ award }: AwardCardProps) {
       className="group flex flex-col gap-6 hover:-translate-y-1 motion-safe:transition-all focus:outline-2 focus:outline-[#FFEA9E] focus:outline-offset-2"
     >
       {/* Award image with golden border + glow */}
-      <div
-        className="relative aspect-square w-full rounded-[24px] overflow-hidden"
-        style={{
-          border: "1px solid #FFEA9E",
-          boxShadow:
-            "0 4px 4px rgba(0, 0, 0, 0.25), 0 0 6px #FAE287",
-        }}
-      >
+      <div className="relative aspect-square w-full rounded-[24px] overflow-hidden">
         <Image
           src={award.thumbnailUrl}
           alt={t(`${award.i18nKey}.name`)}

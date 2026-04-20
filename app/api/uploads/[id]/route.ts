@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service";
 import { getCurrentEmployee } from "@/lib/auth/current-employee";
 import {
   authErrorToResponse,
@@ -87,7 +88,11 @@ export async function DELETE(
   }
 
   // Best-effort storage cleanup — not fatal if it fails (scheduled GC catches it).
-  await supabase.storage.from(KUDO_IMAGES_BUCKET).remove([upload.storage_key]);
+  // Use service-role for storage because `storage.objects` has RLS enabled
+  // without policies; ownership was enforced above on the `uploads` row.
+  await createServiceRoleClient()
+    .storage.from(KUDO_IMAGES_BUCKET)
+    .remove([upload.storage_key]);
 
   return new NextResponse(null, { status: 204 });
 }

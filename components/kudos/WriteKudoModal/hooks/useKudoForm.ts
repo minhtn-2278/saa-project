@@ -40,22 +40,19 @@ export interface HashtagPreview {
 }
 
 /**
- * A single image in the draft. `id` is the `uploads.id` returned by
- * `POST /api/uploads`; `previewUrl` is the short-lived signed read URL
- * the server echoed back so we can show a thumbnail instantly.
+ * A single image in the draft.
+ *
+ * Images are **not** uploaded while the modal is open — they live as local
+ * `File` refs with a `blob:` preview URL until the user hits Gửi. At submit
+ * time the form handler walks this list, uploads each file, and attaches
+ * the resulting upload ids to the kudo. This matches the user's preference
+ * for one atomic network phase on submit.
  */
-export type ImageDraftStatus = "uploading" | "ready" | "failed";
-
 export interface ImageDraft {
-  /** `uploads.id` on the server. `-1` while the upload row hasn't come back yet. */
-  id: number;
-  /** Local File reference so "retry" can re-POST the same bytes. */
+  /** Local File reference — the bytes to upload at submit time. */
   file: File;
-  /** Short-lived signed URL for preview. `null` while uploading. */
-  previewUrl: string | null;
-  status: ImageDraftStatus;
-  /** When the signed URL expires; not load-bearing, just surfaced for debugging. */
-  expiresAt: string | null;
+  /** `blob:` URL for preview. */
+  previewUrl: string;
 }
 
 /** Empty doc helper used as `body` init. */
@@ -85,8 +82,6 @@ export type KudoFormAction =
   | { type: "REMOVE_HASHTAG"; id: number }
   | { type: "REMOVE_HASHTAG_BY_LABEL"; label: string }
   | { type: "ADD_IMAGE"; image: ImageDraft }
-  | { type: "UPDATE_IMAGE"; file: File; next: Partial<ImageDraft> }
-  | { type: "REMOVE_IMAGE"; id: number }
   | { type: "REMOVE_IMAGE_BY_FILE"; file: File }
   | { type: "SET_ANONYMOUS"; isAnonymous: boolean }
   | { type: "SET_ALIAS"; alias: string }
@@ -164,20 +159,6 @@ function reducer(state: KudoFormState, action: KudoFormAction): KudoFormState {
         isDirty: true,
       };
     }
-    case "UPDATE_IMAGE":
-      return {
-        ...state,
-        images: state.images.map((img) =>
-          img.file === action.file ? { ...img, ...action.next } : img,
-        ),
-        isDirty: true,
-      };
-    case "REMOVE_IMAGE":
-      return {
-        ...state,
-        images: state.images.filter((img) => img.id !== action.id),
-        isDirty: true,
-      };
     case "REMOVE_IMAGE_BY_FILE":
       return {
         ...state,
@@ -220,7 +201,6 @@ export function useKudoForm(override?: Partial<KudoFormState>) {
     ...override,
   });
 
-  const hasPendingImages = state.images.some((i) => i.status === "uploading");
   // Codepoint-aware length (surrogate pairs = 1) to match server-side trim rule.
   const aliasOver =
     state.isAnonymous &&
@@ -233,7 +213,6 @@ export function useKudoForm(override?: Partial<KudoFormState>) {
     state.hashtags.length >= 1 &&
     state.hashtags.length <= MAX_HASHTAGS_PER_KUDO &&
     state.images.length <= MAX_IMAGES_PER_KUDO &&
-    !hasPendingImages &&
     !aliasOver;
 
   const setRecipient = useCallback(
@@ -266,15 +245,6 @@ export function useKudoForm(override?: Partial<KudoFormState>) {
     (image: ImageDraft) => dispatch({ type: "ADD_IMAGE", image }),
     [],
   );
-  const updateImage = useCallback(
-    (file: File, next: Partial<ImageDraft>) =>
-      dispatch({ type: "UPDATE_IMAGE", file, next }),
-    [],
-  );
-  const removeImage = useCallback(
-    (id: number) => dispatch({ type: "REMOVE_IMAGE", id }),
-    [],
-  );
   const removeImageByFile = useCallback(
     (file: File) => dispatch({ type: "REMOVE_IMAGE_BY_FILE", file }),
     [],
@@ -297,8 +267,6 @@ export function useKudoForm(override?: Partial<KudoFormState>) {
     removeHashtag,
     removeHashtagByLabel,
     addImage,
-    updateImage,
-    removeImage,
     removeImageByFile,
     reset,
     restore,

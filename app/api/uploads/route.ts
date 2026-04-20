@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service";
 import { getCurrentEmployee } from "@/lib/auth/current-employee";
 import {
   authErrorToResponse,
@@ -72,7 +73,13 @@ export async function POST(request: Request) {
   const ext = mimeType === "image/jpeg" ? "jpg" : mimeType.split("/")[1];
   const storageKey = `${callerId}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safeName}.${ext}`;
 
-  const { data: signed, error: signError } = await supabase.storage
+  // Storage.objects has RLS enabled by default with no policies (per project
+  // decision: "API-layer auth only, no RLS"). Creating a signed upload URL
+  // requires INSERT on storage.objects, so we use the service-role client
+  // here — the caller has already been authenticated + authorised above.
+  const storage = createServiceRoleClient().storage;
+
+  const { data: signed, error: signError } = await storage
     .from(KUDO_IMAGES_BUCKET)
     .createSignedUploadUrl(storageKey);
   if (signError || !signed) {
@@ -99,7 +106,7 @@ export async function POST(request: Request) {
 
   if (insertError || !inserted) {
     // Best-effort cleanup of the storage reservation.
-    await supabase.storage.from(KUDO_IMAGES_BUCKET).remove([storageKey]);
+    await storage.from(KUDO_IMAGES_BUCKET).remove([storageKey]);
     console.error("POST /api/uploads insert error", insertError);
     return errorResponse(
       "INTERNAL_ERROR",
@@ -109,7 +116,7 @@ export async function POST(request: Request) {
   }
 
   // Generate a short-lived read URL the client can use immediately in preview.
-  const { data: read } = await supabase.storage
+  const { data: read } = await storage
     .from(KUDO_IMAGES_BUCKET)
     .createSignedUrl(storageKey, SIGNED_READ_TTL_SECONDS);
 
@@ -117,8 +124,12 @@ export async function POST(request: Request) {
     {
       data: {
         id: inserted.id,
+        /** Full signed-upload URL (already contains `?token=…`). */
         uploadUrl: signed.signedUrl,
+        /** Bare token so the browser can call `uploadToSignedUrl(path, token, file)`. */
         token: signed.token,
+        /** Storage path (key) — pass to `uploadToSignedUrl` as the first arg. */
+        path: storageKey,
         signedReadUrl: read?.signedUrl ?? null,
         mimeType: inserted.mime_type,
         byteSize: inserted.byte_size,

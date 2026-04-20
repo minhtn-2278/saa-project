@@ -12,12 +12,12 @@ import { HashtagPicker } from "./HashtagPicker";
 import { ActionBar } from "./ActionBar";
 import { CancelConfirmDialog } from "./CancelConfirmDialog";
 import { EditorToolbar } from "./EditorToolbar";
+import { uploadImages } from "./uploadImages";
 import { RichTextArea } from "./RichTextArea";
 import { MentionHintRow } from "./MentionHintRow";
 import { ImageUploader } from "./ImageUploader";
 import { AnonymousCheckbox } from "./AnonymousCheckbox";
 import { AnonymousAliasInput } from "./AnonymousAliasInput";
-import { CommunityStandardsLink } from "./CommunityStandardsLink";
 import { FieldLabel } from "./parts/FieldLabel";
 import { useErrorResolver } from "./parts/resolveError";
 import {
@@ -76,8 +76,6 @@ export function WriteKudoModal({
     removeHashtag,
     removeHashtagByLabel,
     addImage,
-    updateImage,
-    removeImage,
     removeImageByFile,
     restore,
     reset,
@@ -146,9 +144,22 @@ export function WriteKudoModal({
     form.dispatch({ type: "SUBMIT_START" });
     setServerErrors({});
 
-    const readyImages = state.images.filter(
-      (img) => img.status === "ready" && img.id > 0,
-    );
+    // Step 1: upload every picked image and collect the `uploads.id`s.
+    // Uploads happen here (not on file pick) so a cancelled draft leaves
+    // no storage artefacts. Failures abort the submit — orphans from
+    // partial batches are cleaned up by the GC job.
+    let imageIds: number[];
+    try {
+      imageIds = await uploadImages(state.images.map((img) => img.file));
+    } catch (err) {
+      console.error("image upload failed", err);
+      form.dispatch({
+        type: "SUBMIT_ERROR",
+        message: tErr("image.uploadFailed"),
+      });
+      toast.error(tErr("image.uploadFailed"));
+      return;
+    }
 
     const title = state.title!;
     const aliasTrim = state.anonymousAlias.trim();
@@ -158,7 +169,7 @@ export function WriteKudoModal({
       hashtags: state.hashtags.map((h) =>
         h.pending ? { label: h.label } : { id: h.id },
       ),
-      imageIds: readyImages.map((img) => img.id),
+      imageIds,
       isAnonymous: state.isAnonymous,
     };
     if (title.pending) payload.titleName = title.name;
@@ -196,13 +207,19 @@ export function WriteKudoModal({
         toast.error(t("toasts.failure"));
         return;
       }
+      // Clear UI validation surface BEFORE the state reset, so the brief
+      // re-render between SUBMIT_SUCCESS and modal unmount doesn't flash
+      // "required" errors against the newly-emptied fields.
+      setShowValidation(false);
+      setServerErrors({});
       form.dispatch({ type: "SUBMIT_SUCCESS" });
       clearDraft();
       editor?.commands.clearContent();
       toast.success(t("toasts.success"));
-      router.refresh();
+      // `onClose()` strips `?write=kudo` via `router.replace`, which already
+      // refreshes the segment's server components — no extra `router.refresh`
+      // needed (it was double-firing and making the success path feel slow).
       onClose();
-      router.replace(pathname);
     } catch (err) {
       console.error("POST /api/kudos failed", err);
       form.dispatch({
@@ -246,11 +263,7 @@ export function WriteKudoModal({
         <div className="flex flex-col w-full">
           <FieldLabel required>{t("fields.body.label")}</FieldLabel>
           <div className="mt-2">
-            <EditorToolbar
-              editor={editor}
-              disabled={state.isSubmitting}
-              rightSlot={<CommunityStandardsLink />}
-            />
+            <EditorToolbar editor={editor} disabled={state.isSubmitting} />
             <RichTextArea
               value={state.body}
               onChange={setBody}
@@ -282,8 +295,6 @@ export function WriteKudoModal({
         <ImageUploader
           images={state.images}
           onAdd={addImage}
-          onUpdate={updateImage}
-          onRemoveById={removeImage}
           onRemoveByFile={removeImageByFile}
           disabled={state.isSubmitting}
         />
@@ -308,11 +319,18 @@ export function WriteKudoModal({
           disabled={state.isSubmitting}
         />
 
-        {state.submitError && (
-          <p role="status" className="text-sm text-[#CF1322]">
-            {state.submitError}
-          </p>
-        )}
+        {/* Form-level error summary — always rendered so screen readers
+            pick up the live-region update; content is empty when no error.
+            `aria-atomic` makes the update announce the full text, not just
+            the diff. T134 (Phase 6 — a11y polish). */}
+        <p
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className={`text-sm text-[#CF1322] ${state.submitError ? "" : "sr-only"}`}
+        >
+          {state.submitError ?? ""}
+        </p>
 
         <ActionBar
           canSubmit={isValid}
