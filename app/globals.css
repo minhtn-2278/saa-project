@@ -50,6 +50,49 @@
   --radius-kudo-md: 8px;                   /* inputs, textarea, submit */
   --radius-kudo-lg: 18px;                  /* image thumbnails */
   --radius-kudo-modal: 24px;               /* modal container */
+
+  /* ========================================================================
+   * Sun* Kudos — Live Board — tokens from design-style.md
+   * Screen MaZUn5xHXZ. See .momorph/specs/MaZUn5xHXZ-sun-kudos-live-board/design-style.md
+   * ====================================================================== */
+
+  /* Surfaces */
+  --color-live-page-bg: #00101A;           /* full-page background (reuses existing --background) */
+  --color-live-surface-dark-1: #00070C;    /* dropdown panel surface, deep containers */
+  --color-live-surface-muted: #2E3940;     /* divider / disabled surface */
+  --color-live-stats-panel-bg: rgba(16, 20, 23, 0.80); /* sidebar D.1 / D.3 panels */
+
+  /* Accents reused across Live board */
+  --color-live-border-gold: #998C5F;       /* 1 px borders (cards, buttons, dropdowns) */
+  --color-live-accent-gold: #FFEA9E;       /* Highlight card border, gold glow seed */
+  --color-live-accent-gold-glow: #FAE287;  /* text-shadow glow on selected dropdown items */
+  --color-live-accent-cream: #FFF8E1;      /* Highlight card + Kudo Post card body */
+  --color-live-button-soft: rgba(255, 234, 158, 0.10);    /* filter trigger default bg */
+  --color-live-button-soft-hover: rgba(255, 234, 158, 0.40);
+  --color-live-overlay-dim: rgba(0, 0, 0, 0.70); /* faded non-center carousel cards */
+
+  /* Hearts (US4) */
+  --color-live-heart-active: #D4271D;      /* liked heart icon */
+  --color-live-heart-inactive: #F17676;    /* unliked heart stroke */
+
+  /* Text on Live-board surfaces */
+  --color-live-text-primary: #FFFFFF;
+  --color-live-text-secondary: #999999;    /* page numbers, dim */
+  --color-live-text-tertiary: #EEEEEE;     /* faded white */
+  --color-live-text-on-cream: #00101A;     /* text inside cream cards */
+
+  /* Shadows / glows */
+  --shadow-live-card: 0 4px 4px rgba(0, 0, 0, 0.25);
+  --glow-live-gold-lg: 0 0 6px #FAE287;    /* selected dropdown item text glow */
+  --glow-live-gold-sm: 0 0 1.3px #FFFFFF;  /* subtle inner glow on spotlight nodes */
+
+  /* Radii — Live board specific */
+  --radius-live-xs: 4px;                   /* dropdown item / filter trigger corners */
+  --radius-live-sm: 8px;                   /* dropdown panel */
+  --radius-live-lg: 16px;                  /* Highlight card (B.3) */
+  --radius-live-xl: 24px;                  /* Kudo Post card (C.3) */
+  --radius-live-spotlight: 47.14px;        /* Spotlight canvas (B.7) */
+  --radius-live-pill: 68px;                /* KV pill input (A.1) */
 }
 
 @layer utilities {

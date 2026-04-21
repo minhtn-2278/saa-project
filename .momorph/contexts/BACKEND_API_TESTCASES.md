@@ -3,8 +3,10 @@
 **Project**: SAA 2025 — Kudos
 **API Version**: v1
 **Generated**: 2026-04-20
-**Last Updated**: 2026-04-20
-**Source screen**: `ihQ26W78P2` (Viết Kudo)
+**Last Updated**: 2026-04-21 (added Live board endpoints)
+**Source screens**:
+- `ihQ26W78P2` (Viết Kudo)
+- `MaZUn5xHXZ` (Sun* Kudos — Live board)
 
 ---
 
@@ -117,6 +119,18 @@ Paginated list of published kudos for the board.
 | KUDO_LIST_08 | Boundary | `page` beyond last | `?page=9999` | `{"data":[],"meta":{...}}` | 200 |
 | KUDO_LIST_09 | Negative | Hidden / reported kudo excluded | A `status=hidden` record exists | Not in `data[]` | 200 |
 | KUDO_LIST_10 | Auth | No token | No auth | `{"error":{"code":"UNAUTHORIZED"}}` | 401 |
+| KUDO_LIST_11 | Positive | Cursor pagination (Live board) | `?cursor=2026-04-21T08:00:00Z&limit=10` | Items strictly older than the cursor; `meta.nextCursor` populated, `meta.page` NOT populated | 200 |
+| KUDO_LIST_12 | Positive | Cursor exhausted | `?cursor=<oldest>&limit=10` | `data: []`, `meta.nextCursor: null` | 200 |
+| KUDO_LIST_13 | Positive | `cursor` + `page` both present | `?cursor=...&page=3` | `cursor` wins — `page` is ignored; response uses cursor meta | 200 |
+| KUDO_LIST_14 | Validation | Invalid cursor format | `?cursor=notadate` | `{"error":{"code":"VALIDATION_ERROR","details":{"cursor":["Must be ISO-8601 date-time"]}}}` | 422 |
+| KUDO_LIST_15 | Positive | Filter by departmentId | `?departmentId=7` | All results' recipient belongs to department 7 | 200 |
+| KUDO_LIST_16 | Positive | hashtagId + departmentId combined (AND) | `?hashtagId=12&departmentId=7` | Results match both filters | 200 |
+| KUDO_LIST_17 | Negative | Filter yields no results | Combination with zero matches | `{"data":[],"meta":{...,"nextCursor":null}}` | 200 |
+| KUDO_LIST_18 | Negative | `departmentId` does not exist | `?departmentId=999999` | `{"data":[], ...}` — no 404 for empty filter | 200 |
+| KUDO_LIST_19 | Positive | Kudo card carries heart fields | Any kudo in response | `heartCount: int>=0`, `heartedByMe: boolean`, `canHeart: boolean` present | 200 |
+| KUDO_LIST_20 | Positive | `canHeart=false` on own Kudo | A Kudo authored by caller appears | That item has `canHeart: false` | 200 |
+
+Maps Live-board spec: US1 AS#3, US1 AS#4, US2 AS#2, US2 AS#5, FR-003, FR-004, FR-013.
 
 ---
 
@@ -250,6 +264,158 @@ Maps frontend TC: ID-8, ID-9, ID-10, ID-12, ID-13, ID-25, ID-26, ID-33.
 
 ---
 
+## Kudos — Live board
+
+### GET /kudos/highlight
+
+#### Description
+Top-5 Kudos by `heart_count DESC, created_at ASC` across the entire event. Same filter params as `GET /kudos`. No pagination.
+
+#### Test Cases
+
+| ID | Category | Scenario | Input | Expected Output | Status |
+|----|----------|----------|-------|-----------------|--------|
+| HIGHLIGHT_01 | Positive | No filter, ≥ 5 published Kudos | no params | `data.length === 5`, sorted by `heartCount DESC` | 200 |
+| HIGHLIGHT_02 | Positive | Tie on heartCount | two Kudos both have 10 hearts | Tie broken by `createdAt ASC` (older wins) | 200 |
+| HIGHLIGHT_03 | Positive | Fewer than 5 published | 3 Kudos exist | `data.length === 3` | 200 |
+| HIGHLIGHT_04 | Positive | Zero published | 0 Kudos | `{"data":[]}` | 200 |
+| HIGHLIGHT_05 | Positive | Filter by hashtagId | `?hashtagId=12` | All 5 results carry hashtag 12; re-ranked | 200 |
+| HIGHLIGHT_06 | Positive | Filter by departmentId | `?departmentId=7` | All results' recipients belong to dept 7 | 200 |
+| HIGHLIGHT_07 | Positive | Combined filters (AND) | `?hashtagId=12&departmentId=7` | Results match both | 200 |
+| HIGHLIGHT_08 | Negative | Hidden / reported excluded | a `status=hidden` record has the top heart count | It is NOT in `data[]` | 200 |
+| HIGHLIGHT_09 | Positive | Anonymous Kudo in highlight | top-hearted kudo is `isAnonymous=true` | `senderName` masked, `senderAvatarUrl: null` | 200 |
+| HIGHLIGHT_10 | Positive | Kudo carries heart state for caller | any result | `heartedByMe` reflects the caller's state, `canHeart` false on own | 200 |
+| HIGHLIGHT_11 | Auth | No token | no auth | Unauthorized | 401 |
+| HIGHLIGHT_12 | Validation | Invalid hashtagId | `?hashtagId=abc` | `details.hashtagId: ["Must be a positive integer"]` | 422 |
+
+Maps Live-board spec: US1 AS#2, US2 AS#2, US3 (all), FR-002, FR-012.
+
+---
+
+## Likes (thả tim)
+
+### POST /kudos/{id}/like
+
+#### Description
+Like a Kudo. Idempotent — liking twice returns the same state. Self-like (author = caller) forbidden at the server.
+
+#### Test Cases
+
+| ID | Category | Scenario | Input | Expected Output | Status |
+|----|----------|----------|-------|-----------------|--------|
+| LIKE_POST_01 | Positive | First-time like by non-author | caller has never liked kudo 500, not author | `{"data":{"kudoId":500,"heartCount":<prev+1>,"heartedByMe":true}}` | 200 |
+| LIKE_POST_02 | Positive | Idempotent re-like | caller already liked kudo 500 | `heartCount` unchanged, `heartedByMe:true`, no duplicate `kudo_hearts` row | 200 |
+| LIKE_POST_03 | Negative | Self-like (caller = author) | caller = `kudos.author_id` | `{"error":{"code":"SELF_LIKE_FORBIDDEN"}}` | 403 |
+| LIKE_POST_04 | Negative | Kudo not found | `/kudos/999999/like` | `{"error":{"code":"NOT_FOUND"}}` | 404 |
+| LIKE_POST_05 | Negative | Kudo soft-deleted | `kudos.deleted_at IS NOT NULL` | `NOT_FOUND` (deleted Kudos are invisible) | 404 |
+| LIKE_POST_06 | Negative | Kudo `status=hidden` | kudo is hidden | `NOT_FOUND` | 404 |
+| LIKE_POST_07 | Validation | id = 0 | `/kudos/0/like` | Validation error | 422 |
+| LIKE_POST_08 | Validation | id not numeric | `/kudos/abc/like` | Validation error | 422 |
+| LIKE_POST_09 | Auth | No token | no auth | Unauthorized | 401 |
+| LIKE_POST_10 | Positive | Concurrent double-click (race) | client fires 2 POST back-to-back | Both return 200 with the same post-state `heartCount` (PK `(kudo_id, employee_id)` prevents double-insert) | 200 |
+| LIKE_POST_11 | Boundary | Heart count increments accurately | 3 different users like | `heartCount` grows by 1 per distinct user | 200 |
+
+Maps Live-board spec: US4 AS#1..#4, FR-005, SC-003, SC-004, TR-002.
+
+---
+
+### DELETE /kudos/{id}/like
+
+#### Description
+Un-like a Kudo. Idempotent — un-liking when you never liked still returns 200 with the current state.
+
+#### Test Cases
+
+| ID | Category | Scenario | Input | Expected Output | Status |
+|----|----------|----------|-------|-----------------|--------|
+| LIKE_DEL_01 | Positive | Un-like after a like | caller previously liked kudo 500 | `{"data":{"kudoId":500,"heartCount":<prev-1>,"heartedByMe":false}}`; row removed | 200 |
+| LIKE_DEL_02 | Positive | Idempotent no-op | caller never liked kudo 500 | `heartCount` unchanged, `heartedByMe:false`, no error | 200 |
+| LIKE_DEL_03 | Negative | Kudo not found | `/kudos/999999/like` | `NOT_FOUND` | 404 |
+| LIKE_DEL_04 | Negative | Kudo soft-deleted | deleted kudo | `NOT_FOUND` | 404 |
+| LIKE_DEL_05 | Auth | No token | no auth | Unauthorized | 401 |
+| LIKE_DEL_06 | Boundary | Count never goes below 0 | caller un-likes twice (no net change second time) | `heartCount` floors at 0 | 200 |
+| LIKE_DEL_07 | Positive | Like → un-like same request loop | POST then DELETE within 100 ms | Final state: `heartedByMe:false`, `heartCount` = initial | 200 |
+
+Maps Live-board spec: US4 AS#2, FR-005.
+
+---
+
+## Departments
+
+### GET /departments
+
+#### Description
+Active departments, sorted by `sort_order, code`. Populates the Live board Phòng ban filter dropdown.
+
+#### Test Cases
+
+| ID | Category | Scenario | Input | Expected Output | Status |
+|----|----------|----------|-------|-----------------|--------|
+| DEPT_LIST_01 | Positive | Default | no params | `{"data":[{"id":...,"code":"CEVC2", ...}]}` sorted by `sortOrder, code` | 200 |
+| DEPT_LIST_02 | Positive | Soft-deleted excluded | seed 1 active + 1 deleted | Only active in `data[]` | 200 |
+| DEPT_LIST_03 | Positive | Empty master list | 0 active rows | `{"data":[]}` | 200 |
+| DEPT_LIST_04 | Positive | Hierarchy exposed | seed `CEVC1` (id=10) + `CEVC1 - DSV` (parent_id=10) | Child row carries `parentId: 10` | 200 |
+| DEPT_LIST_05 | Auth | No token | no auth | Unauthorized | 401 |
+
+Maps Live-board spec: US2 AS#4, FR-004.
+
+---
+
+## Me (Live board sidebar)
+
+### GET /me/stats
+
+#### Description
+Personal Kudos stats. Secret Box counts hard-coded to `0` this release (feature deferred).
+
+#### Test Cases
+
+| ID | Category | Scenario | Input | Expected Output | Status |
+|----|----------|----------|-------|-----------------|--------|
+| STATS_01 | Positive | Caller has Kudos activity | caller has 25 received, 30 sent, 400 hearts received | `{"data":{"kudosReceived":25,"kudosSent":30,"heartsReceived":400,"boxesOpened":0,"boxesUnopened":0}}` | 200 |
+| STATS_02 | Positive | Empty activity | brand-new employee | All counts 0 | 200 |
+| STATS_03 | Positive | Anonymous Kudos count for sender | caller sent a Kudo with `isAnonymous=true` | `kudosSent` includes it (author is still recorded for counting) | 200 |
+| STATS_04 | Positive | Deleted Kudos excluded | caller has 5 Kudos, 1 soft-deleted | `kudosSent: 4` | 200 |
+| STATS_05 | Positive | Hidden Kudos excluded from `heartsReceived` | recipient has a hidden kudo with 10 hearts | Hearts from hidden kudos excluded | 200 |
+| STATS_06 | Positive | Secret Box counts pinned to 0 | regardless of DB state | `boxesOpened: 0`, `boxesUnopened: 0` | 200 |
+| STATS_07 | Auth | No token | no auth | Unauthorized | 401 |
+
+Maps Live-board spec: US6 AS#1, FR-008.
+
+---
+
+## Spotlight
+
+### GET /spotlight
+
+#### Description
+Spotlight total + node layout, server-cached 5 minutes. Realtime UI complements this with Supabase Realtime `kudos:insert`.
+
+#### Test Cases
+
+| ID | Category | Scenario | Input | Expected Output | Status |
+|----|----------|----------|-------|-----------------|--------|
+| SPOTLIGHT_01 | Positive | Cold cache, has Kudos in last 24h | cache empty, 388 published Kudos event-wide + 35 recipients within 24h | `data.total === 388`, `data.nodes.length === 20` (capped), ordered by `kudosCount DESC` | 200 |
+| SPOTLIGHT_02 | Positive | Warm cache within TTL | second request within 5 min bucket | Identical `layoutVersion`; `Cache-Control: max-age=300` | 200 |
+| SPOTLIGHT_03 | Positive | ETag match → 304 | client sends matching `If-None-Match` | Empty body, 304 | 304 |
+| SPOTLIGHT_04 | Positive | Cache refresh after 5 min | 5 min elapsed, new Kudos inserted | `layoutVersion` changes (new 5-min bucket); new `total` + possibly reordered nodes | 200 |
+| SPOTLIGHT_05 | Positive | No recent Kudos (quiet window) | 0 published Kudos in last 24h, but 100 event-wide | `data.total === 100`, `data.nodes === []`; client renders "Chưa có Kudos nào trong 24 giờ qua" empty state | 200 |
+| SPOTLIGHT_06 | Positive | Anonymous Kudo recipient | recipient name shown on Spotlight node | Node carries recipient's real `name` (the ANONYMITY flag is about the **sender** only) | 200 |
+| SPOTLIGHT_07 | Positive | Node identity stable across redraws | same employee appears in two consecutive layouts | `node.id` (= employee_id) unchanged between layouts; x/y may change | 200 |
+| SPOTLIGHT_08 | Positive | Hidden Kudos excluded | `status=hidden` Kudo drops its recipient's 24h count | Recipient absent if they have no other published 24h Kudos; `total` excludes hidden | 200 |
+| SPOTLIGHT_09 | Boundary | More than 20 recipients in 24h | 35 distinct recipients within the window | `data.nodes.length === 20`, ordered `kudosCount DESC` then tie-break `lastReceivedAt DESC, id ASC` | 200 |
+| SPOTLIGHT_09a | Boundary | Fewer than 20 recipients | 7 distinct recipients within 24h | `data.nodes.length === 7` | 200 |
+| SPOTLIGHT_09b | Boundary | All 20 nodes tied on kudosCount | same `kudosCount` for all | Deterministic tie-break by `lastReceivedAt DESC` then `id ASC` | 200 |
+| SPOTLIGHT_10 | Auth | No token | no auth | Unauthorized | 401 |
+| SPOTLIGHT_11 | Negative | Realtime reconciliation — total only | Client increments `total` via realtime, then polls | `total` from `/spotlight` is authoritative; any drift is corrected. Nodes unchanged by realtime events — only by 5-min poll | 200 |
+| SPOTLIGHT_12 | Positive | 24h window rollover | Kudo created 23h 59min ago | Recipient present on first call; after 2 more min + cache refresh, recipient absent (now > 24h) | 200 |
+| SPOTLIGHT_13 | Positive | Deleted employee excluded | recipient `employees.deleted_at IS NOT NULL` | Not in `nodes[]`, even if their Kudos fall within 24h | 200 |
+| SPOTLIGHT_14 | Positive | Public edge cache | identical request from two different users | Same ETag + same `layoutVersion` + same nodes — confirms public cache (Q-P8) | 200 |
+
+Maps Live-board spec: US8 AS#1..#6, FR-010, TR-005, SC-007, SC-008. Aggregation rule per plan Q-P6: top 20 recipients by `kudos_count` in the rolling last 24 hours.
+
+---
+
 ## Integration Test Scenarios
 
 ### Scenario 1 — Happy path: open modal → submit Kudo
@@ -307,6 +473,76 @@ Maps frontend TC: ID-8, ID-9, ID-10, ID-12, ID-13, ID-25, ID-26, ID-33.
 | 3 | `POST /kudos` | 401, client refreshes token via `/auth/refresh` and retries |
 | 4 | Retry with new token | 201, Kudo created |
 
+### Scenario 7 — Live board initial landing
+
+| Step | Action | Expected Result |
+|------|--------|-----------------|
+| 1 | `GET /kudos/highlight` | Top-5 (or fewer) by heartCount (200) |
+| 2 | `GET /kudos?limit=10` (cursor omitted → first page) | 10 newest kudos + `meta.nextCursor` (200) |
+| 3 | `GET /hashtags?limit=100` | Hashtag filter dropdown items (200) |
+| 4 | `GET /departments` | Phòng ban filter dropdown items (200) |
+| 5 | `GET /me/stats` | Sidebar stats; box counts = 0 (200) |
+| 6 | `GET /spotlight` | Total + nodes, cached 5 min (200) |
+
+### Scenario 8 — Filter change refetches Highlight + Feed, resets carousel
+
+| Step | Action | Expected Result |
+|------|--------|-----------------|
+| 1 | User clicks hashtag `Truyền cảm hứng` (id 4) in the dropdown | Client fires both `GET /kudos/highlight?hashtagId=4` and `GET /kudos?hashtagId=4&limit=10` in parallel |
+| 2 | Both responses arrive | Highlight carousel resets to index 0 with the new list; feed replaces current items |
+| 3 | User additionally picks Phòng ban `CEVC2` (id 7) | Client fires `/kudos/highlight?hashtagId=4&departmentId=7` and `/kudos?hashtagId=4&departmentId=7` |
+| 4 | Result empty | Highlight carousel hides (empty `data[]`); feed shows `Hiện tại chưa có Kudos nào.` empty state |
+| 5 | User clicks hashtag `Truyền cảm hứng` again (toggle-off) | Filter cleared, step 1's calls replayed without the hashtag param |
+
+### Scenario 9 — Like then un-like, optimistic UI reconciliation
+
+| Step | Action | Expected Result |
+|------|--------|-----------------|
+| 1 | Client reads kudo 500: `heartCount=3`, `heartedByMe=false`, `canHeart=true` | — |
+| 2 | User clicks heart (optimistic: count=4, hearted=true) | Client fires `POST /kudos/500/like` |
+| 3 | Server returns `{data: {kudoId:500, heartCount:4, heartedByMe:true}}` | Optimistic state confirmed (200) |
+| 4 | User clicks heart again (optimistic: count=3, hearted=false) | Client fires `DELETE /kudos/500/like` |
+| 5 | Server returns `{data: {kudoId:500, heartCount:3, heartedByMe:false}}` | Optimistic state confirmed (200) |
+| 6 | Server rejects (e.g. 403 if self-like race) | Client rolls back optimistic state + toast `"Không thể thả tim..."` |
+
+### Scenario 10 — Author cannot self-like (defense-in-depth)
+
+| Step | Action | Expected Result |
+|------|--------|-----------------|
+| 1 | Author views their own Kudo 600 | Response item has `canHeart: false` |
+| 2 | Client disables heart button | — |
+| 3 | Attacker bypasses UI and sends `POST /kudos/600/like` with author's token | `403 SELF_LIKE_FORBIDDEN`; no row inserted into `kudo_hearts` |
+| 4 | Verify via DB | `SELECT COUNT(*) FROM kudo_hearts WHERE kudo_id=600 AND employee_id=<author>` returns 0 |
+
+### Scenario 11 — Spotlight realtime ↔ 5-min poll reconciliation
+
+| Step | Action | Expected Result |
+|------|--------|-----------------|
+| 1 | Client A loads `/kudos`, subscribes to realtime + calls `/spotlight` | B.7.1 shows total (e.g. 388), nodes rendered |
+| 2 | Client B submits a new Kudo | realtime event fires in Client A |
+| 3 | Client A increments B.7.1 → 389 optimistically; appends a floating node on the outer ring | — |
+| 4 | 5 minutes later, Client A re-calls `/spotlight` | New `layoutVersion`; `total` authoritative; floating node snapped to its computed position |
+| 5 | Realtime channel drops briefly and reconnects | "Reconnecting…" indicator; on reconnect, client fires a one-shot `/spotlight` to reconcile `total` before resuming subscription |
+
+### Scenario 12 — Cursor feed exhaustion
+
+| Step | Action | Expected Result |
+|------|--------|-----------------|
+| 1 | `GET /kudos?limit=10` | First 10, `meta.nextCursor = <11th kudo's createdAt>` |
+| 2 | `GET /kudos?cursor=<prev>&limit=10` | Next 10, `nextCursor` populated |
+| 3 | Repeat until `data.length < 10` | Last page |
+| 4 | Call once more with the now-null cursor shouldn't happen — client stops | Verified in UI; server responds `data: []`, `meta.nextCursor: null` if called |
+
+### Scenario 13 — Kudo deleted mid-scroll (admin action)
+
+| Step | Action | Expected Result |
+|------|--------|-----------------|
+| 1 | User has kudo 500 visible in feed | — |
+| 2 | Admin soft-deletes kudo 500 (`status → hidden` or `deleted_at` set) | — |
+| 3 | User clicks heart on that card | `POST /kudos/500/like` → `404 NOT_FOUND` |
+| 4 | Client shows toast "Không thể thả tim…" and soft-removes the card | — |
+| 5 | `GET /spotlight` on next refresh | `total` decrements; node removed |
+
 ---
 
 ## Test Data Requirements
@@ -327,6 +563,10 @@ Maps frontend TC: ID-8, ID-9, ID-10, ID-12, ID-13, ID-25, ID-26, ID-33.
 | Kudos (hidden) | 1 | Moderation exclusion |
 | Kudos (reported) | 1 | Moderation exclusion |
 | Kudos (anonymous) | 3 | Anonymity masking tests |
+| Departments (active) | ≥ 10 | Phòng ban dropdown + filter tests; include at least 1 row with `parent_id` set |
+| Departments (soft-deleted) | 1 | Exclusion test |
+| Kudo hearts | Seeded so ≥ 5 kudos have hearts ranging 1..10 | Highlight ordering + heart pre-state |
+| Hidden kudo with highest hearts | 1 | HIGHLIGHT_08 exclusion |
 
 ### Test User Credentials
 

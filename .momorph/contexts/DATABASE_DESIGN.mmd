@@ -1,8 +1,12 @@
 erDiagram
+    departments ||--o{ employees : "employs"
+    departments ||--o{ departments : "parent_of"
+
     employees ||--o{ kudos : "authors"
     employees ||--o{ kudos : "receives"
     employees ||--o{ uploads : "owns"
     employees ||--o{ kudo_mentions : "mentioned_in"
+    employees ||--o{ kudo_hearts : "liked_by"
 
     titles ||--o{ kudos : "labels"
 
@@ -14,12 +18,25 @@ erDiagram
 
     kudos ||--o{ kudo_mentions : "contains"
 
+    kudos ||--o{ kudo_hearts : "receives_heart"
+
+    departments {
+        bigint id PK
+        varchar code UK
+        varchar name
+        bigint parent_id FK
+        integer sort_order
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
     employees {
         bigint id PK
         varchar email
         varchar full_name
         varchar employee_code
-        varchar department
+        bigint department_id FK
         varchar job_title
         varchar avatar_url
         boolean is_admin
@@ -93,6 +110,12 @@ erDiagram
     }
 
     kudo_mentions {
+        bigint kudo_id PK_FK
+        bigint employee_id PK_FK
+        timestamptz created_at
+    }
+
+    kudo_hearts {
         bigint kudo_id PK_FK
         bigint employee_id PK_FK
         timestamptz created_at

@@ -228,6 +228,68 @@
           "timeout": "Request timed out, please try again"
         }
       }
+    },
+    "liveBoard": {
+      "eyebrow": "Sun* Annual Awards 2025",
+      "kvBanner": {
+        "title": "TODO: Appreciation system",
+        "pillPlaceholder": "TODO: Who would you like to recognize today?"
+      },
+      "highlight": { "title": "HIGHLIGHT KUDOS" },
+      "spotlight": {
+        "title": "SPOTLIGHT BOARD",
+        "totalSuffix": "KUDOS",
+        "searchPlaceholder": "TODO: Search",
+        "panZoomTooltip": "Pan/Zoom",
+        "recentReceiverPrefix": "TODO: Just received",
+        "reconnecting": "TODO: Reconnecting…",
+        "nodeTooltip": "TODO: {name} — {count} Kudos in the last 24h"
+      },
+      "allKudos": { "title": "ALL KUDOS" },
+      "filter": {
+        "hashtag": "Hashtag",
+        "department": "TODO: Department",
+        "clearAria": "TODO: Clear filter"
+      },
+      "card": {
+        "hearts": "{count}",
+        "copyLink": "Copy Link",
+        "viewDetail": "TODO: View detail",
+        "sentBy": "TODO: From",
+        "sentTo": "TODO: to",
+        "timeFormat": "HH:mm - MM/DD/YYYY",
+        "disabledTitle": "TODO: Coming soon"
+      },
+      "sidebar": {
+        "stats": {
+          "kudosReceived": "TODO: Kudos received:",
+          "kudosSent": "TODO: Kudos sent:",
+          "heartsReceived": "TODO: Hearts received:",
+          "boxesOpened": "TODO: Secret Boxes opened:",
+          "boxesUnopened": "TODO: Secret Boxes unopened:"
+        },
+        "openGift": "TODO: Open gift",
+        "recentReceiversTitle": "TODO: 10 LATEST GIFT RECEIVERS",
+        "mobileTrigger": "TODO: Stats"
+      },
+      "carousel": {
+        "pagination": "{current}/{total}",
+        "prevAria": "TODO: Previous Kudo",
+        "nextAria": "TODO: Next Kudo"
+      },
+      "hoaThi": {
+        "one": "TODO: received 10 Kudos — spreading warm energy.",
+        "two": "TODO: received 20 Kudos — proven influence through daily positive actions.",
+        "three": "TODO: received 50 Kudos — a role model of recognition, sharing, and Sun* spirit."
+      },
+      "emptyStates": {
+        "feed": "TODO: No Kudos yet.",
+        "receiverList": "TODO: No data",
+        "spotlightQuiet": "TODO: No Kudos in the last 24 hours — be the first!"
+      },
+      "toasts": {
+        "heartError": "TODO: Could not add heart. Please try again."
+      }
     }
   }
 }

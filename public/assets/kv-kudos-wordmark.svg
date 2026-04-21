@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 180" width="720" height="180" role="img" aria-label="KUDOS">
+  <!-- TEMPORARY PLACEHOLDER — plan.md § T003 (Phase 1)
+       Replace this file with the final KUDOS wordmark exported from Figma
+       node `2940:13437` (frame `MaZUn5xHXZ`). The real asset is a stylised
+       gradient logo with bespoke glyphs; this placeholder uses plain text at
+       the target size so layout / bounding-box stays stable until the real
+       export lands. Keep the same path and dimensions. -->
+  <defs>
+    <linearGradient id="kv-gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFF3C6"/>
+      <stop offset="50%" stop-color="#FFEA9E"/>
+      <stop offset="100%" stop-color="#FAE287"/>
+    </linearGradient>
+    <filter id="kv-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="2" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <text
+    x="50%"
+    y="50%"
+    dominant-baseline="middle"
+    text-anchor="middle"
+    font-family="Montserrat, sans-serif"
+    font-weight="900"
+    font-size="140"
+    letter-spacing="12"
+    fill="url(#kv-gold)"
+    filter="url(#kv-shadow)"
+  >KUDOS</text>
+</svg>

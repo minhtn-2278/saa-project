@@ -1,7 +1,7 @@
 -- ==========================================
 -- Database Schema — SAA 2025 Kudos
--- Generated from Figma screen: ihQ26W78P2 (Viết Kudo)
--- Generated at: 2026-04-20 (last updated: 2026-04-20 review round 4)
+-- Generated from Figma screen: ihQ26W78P2 (Viết Kudo), MaZUn5xHXZ (Live board)
+-- Generated at: 2026-04-20 (last updated: 2026-04-21 Live board additions)
 -- Conventions:
 --   * PostgreSQL 15+ (Supabase-managed)
 --   * BIGSERIAL primary keys for application tables
@@ -21,6 +21,44 @@
 
 
 -- ==========================================
+-- departments  (MASTER DATA — organisational units)
+--   Populated by HR master-data sync. Drives the Phòng ban filter dropdown on the
+--   Live board (Figma WXK5AYB_rG) and is the canonical reference for
+--   employees.department_id.
+--   Supports optional hierarchy via parent_id (e.g. "CEVC1 - DSV - UI/UX 1" can be
+--   modelled as three rows nested by parent_id if the organisation adopts it).
+--   `code` is the short identifier shown in the dropdown (CEVC2, OPDC - HRF, etc.).
+-- ==========================================
+CREATE TABLE departments (
+    id           BIGSERIAL PRIMARY KEY,
+    code         VARCHAR     NOT NULL,           -- short identifier shown in UI (e.g. 'CEVC2', 'OPDC - HRF')
+    name         VARCHAR,                        -- optional long name (e.g. 'Customer Experience VC 2')
+    parent_id    BIGINT      REFERENCES departments(id), -- optional hierarchy (nullable)
+    sort_order   INTEGER     NOT NULL DEFAULT 0,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at   TIMESTAMPTZ,
+    CONSTRAINT ck_departments_code_length
+        CHECK (char_length(code) BETWEEN 1 AND 60)
+);
+
+-- Code unique among active departments
+CREATE UNIQUE INDEX idx_departments_code_active
+    ON departments(code)
+    WHERE deleted_at IS NULL;
+
+-- Hierarchy traversal (list children of a parent)
+CREATE INDEX idx_departments_parent_active
+    ON departments(parent_id)
+    WHERE deleted_at IS NULL;
+
+-- Live board dropdown query: SELECT ... WHERE deleted_at IS NULL ORDER BY sort_order, code
+CREATE INDEX idx_departments_sort_active
+    ON departments(sort_order, code)
+    WHERE deleted_at IS NULL;
+
+
+-- ==========================================
 -- employees  (MASTER DATA — every Sun* staff account)
 --   Populated by HR / admin import independently of Supabase Auth sign-ups.
 --   One row per staff member. Primary key is BIGSERIAL.
@@ -35,7 +73,7 @@ CREATE TABLE employees (
     email           VARCHAR     NOT NULL,                 -- used to match the authenticated user's JWT email
     full_name       VARCHAR     NOT NULL,
     employee_code   VARCHAR,                              -- Sun* employee code (optional)
-    department      VARCHAR,
+    department_id   BIGINT      REFERENCES departments(id), -- Phòng ban FK (Live board filter + org views). Nullable until HR sync populates.
     job_title       VARCHAR,
     avatar_url      VARCHAR,                              -- Supabase Storage signed-URL target or external URL
     is_admin        BOOLEAN     NOT NULL DEFAULT FALSE,
@@ -47,6 +85,11 @@ CREATE TABLE employees (
     CONSTRAINT ck_employees_email_format
         CHECK (email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$')
 );
+-- Live board addition (2026-04-21): replaced the legacy `department VARCHAR` free-text
+-- column with a proper `department_id BIGINT REFERENCES departments(id)` foreign key.
+-- Rationale: the Phòng ban filter dropdown on the Live board (screenId MaZUn5xHXZ)
+-- requires a stable, enumerated list of departments — free-text cannot support the
+-- dropdown or safe joins. HR master-data sync is responsible for setting this FK.
 
 -- Note: there is intentionally no current_employee_id() SQL helper. Identity
 -- resolution (JWT email → employees.id) happens in the Next.js Route Handler
@@ -69,8 +112,8 @@ CREATE INDEX idx_employees_full_name_trgm
     ON employees USING GIN (lower(full_name) gin_trgm_ops)
     WHERE deleted_at IS NULL;
 
-CREATE INDEX idx_employees_department_active
-    ON employees(department)
+CREATE INDEX idx_employees_department_id_active
+    ON employees(department_id)
     WHERE deleted_at IS NULL;
 
 -- Admin-role lookups
@@ -126,6 +169,9 @@ CREATE TABLE hashtags (
     CONSTRAINT ck_hashtags_label_length
         CHECK (char_length(label) BETWEEN 2 AND 32)
 );
+-- Live board (2026-04-21): all active hashtags are shown in the filter dropdown —
+-- no distinction between program-curated and user-generated. Ordering is by
+-- `usage_count DESC, label ASC` at query time.
 
 CREATE UNIQUE INDEX idx_hashtags_slug_active
     ON hashtags(slug)
@@ -133,6 +179,11 @@ CREATE UNIQUE INDEX idx_hashtags_slug_active
 
 CREATE INDEX idx_hashtags_label_active
     ON hashtags(label)
+    WHERE deleted_at IS NULL;
+
+-- Live-board Hashtag filter dropdown query: ORDER BY usage_count DESC, label ASC
+CREATE INDEX idx_hashtags_usage_count_active
+    ON hashtags(usage_count DESC)
     WHERE deleted_at IS NULL;
 
 
@@ -258,3 +309,42 @@ CREATE TABLE kudo_mentions (
 -- "Kudos that mention me"
 CREATE INDEX idx_kudo_mentions_employee_kudo
     ON kudo_mentions(employee_id, kudo_id);
+
+
+-- ==========================================
+-- kudo_hearts  (Live board: like / thả tim)
+--   One row per (kudo, employee) pair. Composite primary key enforces the
+--   "at most one like per user per kudo" rule at the database layer.
+--   Route Handlers additionally enforce "author cannot self-like" (kudos.author_id
+--   <> employee_id) — NOT a DB CHECK because checking across tables would require
+--   a trigger; application enforcement + the idempotent upsert pattern is preferred.
+--   The card's visible heart_count is computed via COUNT(*) with a dedicated index
+--   (not denormalised on the kudos row) so un-likes can't drift the counter.
+--   Bonus-day hearts is OUT OF SCOPE this release — each like is exactly 1 heart.
+-- ==========================================
+CREATE TABLE kudo_hearts (
+    kudo_id      BIGINT      NOT NULL REFERENCES kudos(id) ON DELETE CASCADE,
+    employee_id  BIGINT      NOT NULL REFERENCES employees(id),
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (kudo_id, employee_id)
+);
+
+-- Per-Kudo heart count + "has current user liked" query:
+--   SELECT count(*) FROM kudo_hearts WHERE kudo_id = $1;
+-- The PK (kudo_id, employee_id) covers the count.
+
+-- Highlight carousel + recipient's received-hearts aggregate:
+--   SELECT employee_id, count(*) FROM kudo_hearts GROUP BY employee_id;
+-- Uses this index:
+CREATE INDEX idx_kudo_hearts_employee
+    ON kudo_hearts(employee_id);
+
+
+-- ==========================================
+-- NOTE: `secret_boxes` table is intentionally NOT created this release.
+-- Reason: the Secret Box / "Mở quà" feature is deferred. The Live board sidebar
+-- keeps the D.1.6 / D.1.7 rows for layout parity but renders `0` / `—` for both
+-- counts, and the D.3 "10 SUNNER NHẬN QUÀ MỚI NHẤT" list renders its empty state
+-- (`Chưa có dữ liệu`). When the feature is scheduled, re-introduce the table as
+-- documented in DATABASE_ANALYSIS.md § "Deferred schema".
+-- ==========================================

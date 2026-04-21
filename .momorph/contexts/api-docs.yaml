@@ -2,10 +2,15 @@ openapi: 3.0.3
 info:
   title: "SAA 2025 — Kudos API"
   description: |
-    API specification for the **Viết Kudo** (Write Kudo) feature of the
-    Sun* Awards Annual 2025 platform. Endpoints here back the modal on screen
-    `ihQ26W78P2`: recipient search, Danh hiệu & hashtag master lists,
-    image upload, `@mention` suggestions, and Kudo creation.
+    API specification for the **Kudos** subsystem of the Sun* Awards Annual 2025
+    platform. Two screens back onto this surface:
+
+    - **Viết Kudo** (screen `ihQ26W78P2`) — modal: recipient search, Danh hiệu
+      & hashtag master lists, image upload, `@mention` suggestions, and Kudo
+      creation.
+    - **Sun* Kudos — Live board** (screen `MaZUn5xHXZ`) — public feed: HIGHLIGHT
+      KUDOS carousel (top-5 hearted), ALL KUDOS cursor-paginated feed, filters
+      (hashtag + department), like / un-like, personal stats, Spotlight board.
 
     ## Authentication
     All endpoints (except `GET /health`) require a JWT Bearer token issued by
@@ -45,15 +50,23 @@ servers:
 
 tags:
   - name: Kudos
-    description: Create and read Kudo posts
+    description: Create and read Kudo posts (incl. Highlight carousel + feed)
+  - name: Likes
+    description: Like / un-like a Kudo (Live board heart action)
   - name: Titles
     description: Danh hiệu (honorary title) master list
   - name: Hashtags
-    description: Hashtag master list
+    description: Hashtag master list (also drives Live board filter dropdown)
+  - name: Departments
+    description: Phòng ban master list (drives Live board filter dropdown)
   - name: Uploads
     description: Image upload used by Kudo attachments
   - name: Employees
     description: Employee search & mention suggestions
+  - name: Me
+    description: Personal stats surfaced by the Live board sidebar
+  - name: Spotlight
+    description: Live Spotlight board — total count + recipient word-cloud layout
 
 paths:
   # ============================================
@@ -116,16 +129,32 @@ paths:
 
     get:
       tags: [Kudos]
-      summary: List Kudos (board feed)
+      summary: List Kudos (Live board ALL KUDOS feed)
       description: |
-        Paginated list of published Kudos for the board. Author identity is
-        masked for kudos where `isAnonymous=true`.
+        Feed of published Kudos, newest first. Author identity is masked on
+        anonymous kudos. Supports **two pagination modes**:
+
+        - **Cursor** (Live board default) — pass `cursor=<ISO8601>` to fetch
+          items older than the cursor. The response's `meta.nextCursor` seeds
+          the next call (null when no more). Use this for infinite scroll.
+        - **Offset** (legacy Viết Kudo path) — pass `page` + `limit`. When
+          `cursor` is present, `page` is ignored.
+
+        Two filters are combined via AND: `hashtagId` filters on Kudos carrying
+        that hashtag; `departmentId` filters on Kudos whose **recipient** belongs
+        to that department.
       operationId: listKudos
       security:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/LimitParam"
+        - name: cursor
+          in: query
+          schema: { type: string, format: date-time }
+          description: |
+            ISO-8601 timestamp. When set, return items with `createdAt < cursor`
+            and populate `meta.nextCursor` on the response.
         - name: titleId
           in: query
           schema: { type: integer, format: int64 }
@@ -133,7 +162,11 @@ paths:
         - name: hashtagId
           in: query
           schema: { type: integer, format: int64 }
-          description: Filter by hashtag
+          description: Filter by hashtag (Live board Hashtag dropdown)
+        - name: departmentId
+          in: query
+          schema: { type: integer, format: int64 }
+          description: Filter by recipient's department (Live board Phòng ban dropdown)
       responses:
         "200":
           description: Paginated Kudos
@@ -143,6 +176,93 @@ paths:
                 $ref: "#/components/schemas/KudoListResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
+  /kudos/highlight:
+    get:
+      tags: [Kudos]
+      summary: Top-5 Highlight Kudos (Live board carousel)
+      description: |
+        Returns up to 5 Kudos ordered by `heart_count DESC, created_at ASC`
+        across the entire event window. Accepts the same two filters as the
+        main feed; filter changes reset the carousel to position 0 client-side.
+        Always returns flat array (no pagination meta).
+      operationId: listHighlightKudos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: hashtagId
+          in: query
+          schema: { type: integer, format: int64 }
+        - name: departmentId
+          in: query
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Top-hearted Kudos (0..5 items)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HighlightKudoListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /kudos/{id}/like:
+    post:
+      tags: [Likes]
+      summary: Like a Kudo (thả tim)
+      description: |
+        Idempotent: liking a Kudo you've already liked returns the current
+        state (no duplicate row thanks to the `(kudo_id, employee_id)` PK).
+        Server enforces the "author cannot self-like" rule.
+        Bonus-day hearts is **out of scope** — each like is exactly 1 heart.
+      operationId: likeKudo
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Liked (or already liked — idempotent)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LikeResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Caller is the author of the Kudo (self-like forbidden)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+              example:
+                error:
+                  code: "SELF_LIKE_FORBIDDEN"
+                  message: "Bạn không thể thả tim cho Kudo của chính mình"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Likes]
+      summary: Un-like a Kudo
+      description: |
+        Idempotent: un-liking a Kudo you never liked returns the current state
+        and 200 (not 404) so the client's optimistic UI can settle cleanly.
+      operationId: unlikeKudo
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Un-liked (or was never liked — idempotent)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LikeResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   # ============================================
   # Titles (Danh hiệu)
@@ -313,6 +433,108 @@ paths:
         "422":
           $ref: "#/components/responses/ValidationError"
 
+  # ============================================
+  # Departments (Phòng ban master list — Live board filter)
+  # ============================================
+  /departments:
+    get:
+      tags: [Departments]
+      summary: List active departments
+      description: |
+        Returns every active department, sorted by `sort_order` then `code`.
+        Populates the Live board Phòng ban filter dropdown (Figma `WXK5AYB_rG`).
+        Soft-deleted rows are excluded.
+      operationId: listDepartments
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of departments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepartmentListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ============================================
+  # Me (Live board sidebar — personal stats)
+  # ============================================
+  /me/stats:
+    get:
+      tags: [Me]
+      summary: Personal Kudos stats for the Live board sidebar
+      description: |
+        Aggregates for the Live board sidebar `D.1` panel:
+        `kudosReceived`, `kudosSent`, `heartsReceived` derived from live DB counts.
+        `boxesOpened` and `boxesUnopened` are **hard-coded to `0`** this release —
+        the `secret_boxes` table is deferred. See spec `FR-008` and
+        `DATABASE_ANALYSIS.md § Deferred schema`.
+      operationId: getMyStats
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Stats for the authenticated employee
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyStatsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ============================================
+  # Spotlight (Live board B.7 — word-cloud canvas)
+  # ============================================
+  /spotlight:
+    get:
+      tags: [Spotlight]
+      summary: Spotlight data (event-wide total + top-20 recipients of the last 24h)
+      description: |
+        Drives the Live board Spotlight canvas (Figma `2940:14174`).
+
+        **Data shape**:
+        - `data.total` — event-wide `COUNT(*)` of published Kudos, shown as
+          the big "{N} KUDOS" label (B.7.1). **Not** 24h-scoped.
+        - `data.nodes[]` — up to **20** recipients ranked by `kudos_count DESC`
+          within the rolling last 24 hours. Empty during quiet periods.
+
+        **Caching**: the full response is computed server-side and cached for
+        **5 minutes** (`Cache-Control: public, max-age=300, s-maxage=300`).
+        `layoutVersion = {eventDayIso}:{5-min-bucket}` — clients detect changes
+        to decide whether to animate a redraw.
+
+        **Realtime complement**: clients subscribe to the Supabase Realtime
+        channel on the `kudos` table for INSERT/DELETE events; those events
+        only update the `total` label (debounced 500 ms) and the animated
+        "recent-receivers" log inside the canvas. **Canvas nodes are NOT
+        modified between 5-min polls** — the top-20 aggregate is recomputed
+        server-side only.
+
+        **Node click**: navigates to `/profile/{id}` (Kudo detail page deferred
+        per plan Q-A1; node does not link to a single Kudo).
+      operationId: getSpotlight
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Total + nodes + layout version
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: "public, max-age=300, s-maxage=300"
+            ETag:
+              schema: { type: string }
+              description: Hash of `layoutVersion`; enables 304 on unchanged layout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpotlightResponse"
+        "304":
+          description: Layout unchanged since the client's ETag
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
 components:
   # ============================================
   # Security Schemes
@@ -424,6 +646,16 @@ components:
               code: "UNSUPPORTED_MEDIA_TYPE"
               message: "Only JPG, PNG, or WebP images are allowed"
 
+    Conflict:
+      description: Resource state conflict
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          example:
+            error:
+              code: "CONFLICT"
+              message: "Conflicting state"
+
   # ============================================
   # Schemas
   # ============================================
@@ -458,11 +690,21 @@ components:
 
     PaginationMeta:
       type: object
+      description: |
+        Offset pagination (`page`/`limit`/`total`/`totalPages`) is populated when
+        the request uses `page`. Cursor pagination (`nextCursor`) is populated
+        when the request uses `cursor`. Responses carry one OR the other,
+        not both.
       properties:
-        page: { type: integer }
+        page: { type: integer, nullable: true }
         limit: { type: integer }
-        total: { type: integer }
-        totalPages: { type: integer }
+        total: { type: integer, nullable: true }
+        totalPages: { type: integer, nullable: true }
+        nextCursor:
+          type: string
+          format: date-time
+          nullable: true
+          description: ISO-8601 timestamp for the next cursor page; `null` when exhausted.
 
     # --- Employee ---
     EmployeeSummary:
@@ -660,6 +902,19 @@ components:
           type: string
           enum: [published, hidden, reported]
         createdAt: { type: string, format: date-time }
+        heartCount:
+          type: integer
+          minimum: 0
+          description: Total hearts on this Kudo (COUNT of `kudo_hearts`).
+        heartedByMe:
+          type: boolean
+          description: Whether the authenticated caller has liked this Kudo.
+        canHeart:
+          type: boolean
+          description: |
+            `false` when the caller is the author (self-like forbidden). UI must
+            not enable the heart button when this is false; the server rejects
+            any like attempt with `SELF_LIKE_FORBIDDEN` (403) regardless.
 
     KudoResponse:
       type: object
@@ -673,3 +928,149 @@ components:
           type: array
           items: { $ref: "#/components/schemas/Kudo" }
         meta: { $ref: "#/components/schemas/PaginationMeta" }
+
+    HighlightKudoListResponse:
+      type: object
+      description: |
+        Top-5 hearted Kudos. No pagination — always 0..5 items.
+      properties:
+        data:
+          type: array
+          maxItems: 5
+          items: { $ref: "#/components/schemas/Kudo" }
+
+    # --- Likes ---
+    LikeResponse:
+      type: object
+      description: |
+        Reflects the post-operation state for optimistic UI reconciliation.
+        Returned by BOTH `POST` (like) and `DELETE` (un-like) so the client can
+        update without a separate fetch.
+      properties:
+        data:
+          type: object
+          required: [kudoId, heartCount, heartedByMe]
+          properties:
+            kudoId: { type: integer, format: int64 }
+            heartCount:
+              type: integer
+              minimum: 0
+              description: Total hearts on the Kudo after the operation.
+            heartedByMe:
+              type: boolean
+              description: |
+                `true` after POST, `false` after DELETE (always reflects the
+                caller's current state in an idempotent way).
+
+    # --- Department (Phòng ban) ---
+    Department:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        code: { type: string, example: "CEVC2" }
+        name:
+          type: string
+          nullable: true
+          example: "Customer Experience VC 2"
+        parentId:
+          type: integer
+          format: int64
+          nullable: true
+          description: Optional hierarchy (e.g. `CEVC1 - DSV - UI/UX 1`).
+        sortOrder: { type: integer }
+
+    DepartmentListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Department" }
+
+    # --- Me / stats ---
+    MyStatsResponse:
+      type: object
+      description: |
+        Sidebar stats. Secret Box counts are hard-coded to `0` until the
+        `secret_boxes` table ships (feature deferred).
+      properties:
+        data:
+          type: object
+          required: [kudosReceived, kudosSent, heartsReceived, boxesOpened, boxesUnopened]
+          properties:
+            kudosReceived:
+              type: integer
+              minimum: 0
+              description: "`Số Kudos bạn nhận được`"
+            kudosSent:
+              type: integer
+              minimum: 0
+              description: "`Số Kudos bạn đã gửi`"
+            heartsReceived:
+              type: integer
+              minimum: 0
+              description: "`Số tim bạn nhận được`"
+            boxesOpened:
+              type: integer
+              enum: [0]
+              description: "`Số Secret Box bạn đã mở` — always `0` this release."
+            boxesUnopened:
+              type: integer
+              enum: [0]
+              description: "`Số Secret Box chưa mở` — always `0` this release."
+
+    # --- Spotlight ---
+    SpotlightNode:
+      type: object
+      description: |
+        One **top-20 recipient** positioned on the Spotlight canvas. "Top" =
+        recipients ranked by `kudos_count` received **in the rolling last 24
+        hours**. Identity = `employee_id` is stable across layout redraws so
+        the client can animate moves; position (`x`, `y`) may shift as the
+        24h window rolls over.
+      required: [id, name, kudosCount, x, y]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: employees.id of the recipient this node represents.
+        name: { type: string }
+        avatarUrl: { type: string, format: uri, nullable: true }
+        kudosCount:
+          type: integer
+          minimum: 1
+          description: Kudos received by this recipient within the last 24h.
+        lastReceivedAt:
+          type: string
+          format: date-time
+          description: Timestamp of their most-recent Kudo within the 24h window (hover tooltip).
+        x:
+          type: number
+          description: Horizontal position within the canvas (0..1 normalised).
+        y:
+          type: number
+          description: Vertical position within the canvas (0..1 normalised).
+
+    SpotlightResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          required: [total, nodes, layoutVersion, cachedAt]
+          properties:
+            total:
+              type: integer
+              minimum: 0
+              description: Event-wide `COUNT(*)` of published Kudos at `cachedAt` (not 24h-scoped — this is the big B.7.1 number).
+            nodes:
+              type: array
+              maxItems: 20
+              description: Up to 20 top-recipient nodes (top `kudos_count DESC` within last 24h). May be empty during quiet periods.
+              items: { $ref: "#/components/schemas/SpotlightNode" }
+            layoutVersion:
+              type: string
+              description: "Opaque version tag `{eventDayIso}:{bucket5min}`; changes every 5 min."
+              example: "2026-04-21:4712345"
+            cachedAt:
+              type: string
+              format: date-time
+              description: When the server computed this layout (TTL 5 min).

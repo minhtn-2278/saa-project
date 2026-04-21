@@ -50,10 +50,15 @@ export async function GET(request: Request) {
   const escaped = normalised.replace(/[%_]/g, (c) => `\\${c}`);
   const pattern = `%${escaped}%`;
 
+  // Live-board migration (plan § T015): read department via the new
+  // `departments` FK join. Fall back to the legacy `employees.department`
+  // free-text column while the transition is in flight — the response key
+  // `department` is preserved so callers (Viết Kudo recipient dropdown) stay
+  // unchanged.
   let query = supabase
     .from("employees")
     .select(
-      "id, email, full_name, employee_code, department, job_title, avatar_url, is_admin, deleted_at",
+      "id, email, full_name, employee_code, department, department_id, job_title, avatar_url, is_admin, deleted_at, departments(code)",
     )
     .is("deleted_at", null)
     .or(`full_name.ilike.${pattern},email.ilike.${pattern}`)
@@ -70,14 +75,18 @@ export async function GET(request: Request) {
     return errorResponse("INTERNAL_ERROR", "Could not search employees", 500);
   }
 
-  const rows = (data ?? []) as EmployeeRow[];
+  type RowWithDept = EmployeeRow & { departments: { code: string } | null };
+  const rows = (data ?? []) as unknown as RowWithDept[];
+
   return NextResponse.json({
     data: rows.map((r) => ({
       id: r.id,
       email: r.email,
       fullName: r.full_name,
       employeeCode: r.employee_code,
-      department: r.department,
+      // Prefer the FK-resolved code; fall back to legacy text until the old
+      // column is dropped in a follow-up migration.
+      department: r.departments?.code ?? r.department,
       jobTitle: r.job_title,
       avatarUrl: r.avatar_url,
     })),

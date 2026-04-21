@@ -158,10 +158,22 @@ Responsive, accessible design is a quality requirement, not a nice-to-have.
 | Backend / Auth / DB | Supabase JS | latest |
 | Schema validation | Zod | latest |
 | Unit / integration tests | Vitest + Testing Library | latest |
-| E2E tests | Playwright | latest |
+| E2E tests | Playwright + @axe-core/playwright | latest |
+| Rich text editor | Tiptap (@tiptap/react + extensions) | 3.x |
+| HTML sanitisation | sanitize-html | 2.x |
+| Modal / dialog primitive | @radix-ui/react-dialog | 1.x |
+| Toast primitive | sonner | 2.x |
+| Feed virtualisation *(Live board)* | @tanstack/react-virtual | latest |
+| Gesture (pan / pinch-zoom) *(Live board Spotlight)* | @use-gesture/react | latest |
+| Animation / spring *(Live board Spotlight)* | @react-spring/web | latest |
 
 Adding a library not in this table requires a constitution amendment (PR + approval)
 before it may be merged.
+
+**Amendment history**:
+
+- 2026-04-20 — Added Tiptap, sanitize-html, @radix-ui/react-dialog, sonner, @axe-core/playwright for the Viết Kudo feature (plan `ihQ26W78P2-viet-kudo`).
+- 2026-04-21 — Added `@tanstack/react-virtual`, `@use-gesture/react`, `@react-spring/web` for the Sun* Kudos Live Board feature (plan `MaZUn5xHXZ-sun-kudos-live-board`). Justification: virtualised infinite-scroll feed (plan § T001/Constitution Compliance) and touch-device gesture support on the Spotlight canvas (plan § Q-P2 resolved "install"). Alternatives considered and rejected in the plan's Constitution Compliance table.
 
 ### Folder Structure
 

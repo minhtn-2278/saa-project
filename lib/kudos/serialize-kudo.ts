@@ -7,6 +7,22 @@ import type {
 } from "@/types/kudos";
 
 /**
+ * Optional heart-state inputs for Live-board responses. When omitted, the
+ * serializer leaves the three heart fields undefined (server-to-server use
+ * cases or tests that don't care about likes can skip the extra query).
+ *
+ * See plan `MaZUn5xHXZ-sun-kudos-live-board` § T014.
+ */
+export interface SerializeKudoHeartContext {
+  /** Total COUNT(*) from `kudo_hearts` for this kudo. */
+  heartCount: number;
+  /** Set of kudo_ids the caller has already liked (batched membership check). */
+  likedKudoIds: Set<number>;
+  /** Caller's `employees.id` — used only to compute `canHeart`. */
+  callerEmployeeId: number;
+}
+
+/**
  * Public display name fallback for anonymous Kudos whose author did NOT
  * provide a custom alias. Kept in sync with the i18n key
  * `kudos.writeKudo.fields.anonymous.aliasFallback` (vi.json) but emitted as
@@ -40,6 +56,27 @@ export interface SerializeKudoDeps {
 
   /** Resolved mention employee rows (for rendering profile links). */
   mentionEmployeeIds: number[];
+
+  /**
+   * Optional: when the Live-board GET /kudos and GET /kudos/highlight handlers
+   * pass a caller context, the serializer populates `heartCount`,
+   * `heartedByMe`, and `canHeart` on the returned `PublicKudo`. Omitted for
+   * non-user reads (e.g. server-to-server cache warmers).
+   *
+   * `canHeart = kudo.author_id !== callerEmployeeId` — the UI-level disable
+   * of the heart button on the author's own card (TR-002). Server-side the
+   * like handler enforces the same rule independently, so this is a UX hint
+   * only, not a security boundary.
+   */
+  heartContext?: SerializeKudoHeartContext;
+
+  /**
+   * Optional resolved `departments.code` for rendering the sender/recipient
+   * "department" field. When set, serializer prefers it over the legacy
+   * free-text `employees.department`. Phase 2 ripple (plan § T014) — keeps
+   * Viết Kudo callers working even if they don't pass the map yet.
+   */
+  departmentCodeById?: Map<number, string>;
 }
 
 /**
@@ -60,7 +97,15 @@ export function serializeKudo(
   kudo: KudoRow,
   deps: SerializeKudoDeps,
 ): PublicKudo {
-  const { employeesById, title, hashtags, images, mentionEmployeeIds } = deps;
+  const {
+    employeesById,
+    title,
+    hashtags,
+    images,
+    mentionEmployeeIds,
+    heartContext,
+    departmentCodeById,
+  } = deps;
 
   const author = employeesById.get(kudo.author_id);
   const recipient = employeesById.get(kudo.recipient_id);
@@ -87,6 +132,16 @@ export function serializeKudo(
     senderAvatarUrl = author.avatar_url;
   }
 
+  // Prefer the FK-resolved department code when the caller passes one;
+  // fall back to the legacy free-text column for Viết Kudo call sites that
+  // haven't been updated yet (keeps backward compatibility).
+  const resolveDepartment = (e: EmployeeRow): string | null => {
+    if (departmentCodeById && e.department_id != null) {
+      return departmentCodeById.get(e.department_id) ?? e.department;
+    }
+    return e.department;
+  };
+
   const mentions = mentionEmployeeIds
     .map((id) => employeesById.get(id))
     .filter((e): e is EmployeeRow => e !== undefined)
@@ -95,12 +150,12 @@ export function serializeKudo(
       fullName: e.full_name,
       email: e.email,
       employeeCode: e.employee_code,
-      department: e.department,
+      department: resolveDepartment(e),
       jobTitle: e.job_title,
       avatarUrl: e.avatar_url,
     }));
 
-  return {
+  const result: PublicKudo = {
     id: kudo.id,
     senderName,
     senderAvatarUrl,
@@ -129,4 +184,16 @@ export function serializeKudo(
     status: kudo.status,
     createdAt: kudo.created_at,
   };
+
+  // Heart state — Live-board fields (plan § T014). Only populated when the
+  // Route Handler passes a heartContext batch.
+  if (heartContext) {
+    result.heartCount = heartContext.heartCount;
+    result.heartedByMe = heartContext.likedKudoIds.has(kudo.id);
+    // Author self-like is forbidden — used by UI to disable the heart button.
+    // Server-side enforcement is independent (see /api/kudos/{id}/like).
+    result.canHeart = kudo.author_id !== heartContext.callerEmployeeId;
+  }
+
+  return result;
 }

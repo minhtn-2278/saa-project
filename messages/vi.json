@@ -227,6 +227,72 @@
           "timeout": "Gửi thất bại do mạng chậm, vui lòng thử lại"
         }
       }
+    },
+    "liveBoard": {
+      "eyebrow": "Sun* Annual Awards 2025",
+      "kvBanner": {
+        "title": "Hệ thống ghi nhận lời cảm ơn",
+        "pillPlaceholder": "Hôm nay, bạn muốn gửi lời cảm ơn và ghi nhận đến ai?"
+      },
+      "highlight": {
+        "title": "HIGHLIGHT KUDOS"
+      },
+      "spotlight": {
+        "title": "SPOTLIGHT BOARD",
+        "totalSuffix": "KUDOS",
+        "searchPlaceholder": "Tìm kiếm",
+        "panZoomTooltip": "Pan/Zoom",
+        "recentReceiverPrefix": "Vừa nhận",
+        "reconnecting": "Đang kết nối lại…",
+        "nodeTooltip": "{name} — {count} Kudos nhận trong 24h qua"
+      },
+      "allKudos": {
+        "title": "ALL KUDOS"
+      },
+      "filter": {
+        "hashtag": "Hashtag",
+        "department": "Phòng ban",
+        "clearAria": "Xóa bộ lọc"
+      },
+      "card": {
+        "hearts": "{count}",
+        "copyLink": "Copy Link",
+        "viewDetail": "Xem chi tiết",
+        "sentBy": "Gửi từ",
+        "sentTo": "đến",
+        "timeFormat": "HH:mm - MM/DD/YYYY",
+        "disabledTitle": "Tính năng sẽ ra mắt trong bản cập nhật sắp tới"
+      },
+      "sidebar": {
+        "stats": {
+          "kudosReceived": "Số Kudos bạn nhận được:",
+          "kudosSent": "Số Kudos bạn đã gửi:",
+          "heartsReceived": "Số tim bạn nhận được:",
+          "boxesOpened": "Số Secret Box bạn đã mở:",
+          "boxesUnopened": "Số Secret Box chưa mở:"
+        },
+        "openGift": "Mở quà",
+        "recentReceiversTitle": "10 SUNNER NHẬN QUÀ MỚI NHẤT",
+        "mobileTrigger": "Thống kê"
+      },
+      "carousel": {
+        "pagination": "{current}/{total}",
+        "prevAria": "Kudo trước",
+        "nextAria": "Kudo tiếp theo"
+      },
+      "hoaThi": {
+        "one": "Sunner đã nhận được 10 Kudos và bắt đầu lan tỏa năng lượng ấm áp đến mọi người xung quanh.",
+        "two": "Sunner đã nhận được 20 Kudos và chứng minh sức ảnh hưởng của mình qua những hành động lan tỏa tích cực mỗi ngày.",
+        "three": "Sunner đã nhận được 50 Kudos và trở thành hình mẫu của sự công nhận, sẻ chia và lan tỏa tinh thần Sun*."
+      },
+      "emptyStates": {
+        "feed": "Hiện tại chưa có Kudos nào.",
+        "receiverList": "Chưa có dữ liệu",
+        "spotlightQuiet": "Chưa có Kudos nào trong 24 giờ qua — hãy là người mở màn!"
+      },
+      "toasts": {
+        "heartError": "Không thể thả tim. Vui lòng thử lại."
+      }
     }
   }
 }

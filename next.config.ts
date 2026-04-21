@@ -28,15 +28,21 @@ function supabaseStorageHostname(): string {
  */
 function assertNoTestRoutesInProduction(): void {
   if (process.env.NODE_ENV !== "production") return;
-  const testRoute = resolve(process.cwd(), "app/api/_test/sign-in/route.ts");
-  if (existsSync(testRoute)) {
-    throw new Error(
-      [
-        "[next.config.ts] SECURITY: app/api/_test/sign-in/route.ts must NOT be",
-        "present in a production build. Remove the file from the production",
-        "branch or add it to a test-only ignore pattern before deploying.",
-      ].join("\n"),
-    );
+  const testRoutes = [
+    "app/api/_test/sign-in/route.ts",
+    "app/api/_test/revalidate/route.ts",
+  ];
+  for (const rel of testRoutes) {
+    const abs = resolve(process.cwd(), rel);
+    if (existsSync(abs)) {
+      throw new Error(
+        [
+          `[next.config.ts] SECURITY: ${rel} must NOT be present in a production`,
+          "build. Remove the file from the production branch or add it to a",
+          "test-only ignore pattern before deploying.",
+        ].join("\n"),
+      );
+    }
   }
 }
 
@@ -66,6 +72,11 @@ const nextConfig: NextConfig = {
       }
     })();
 
+    // Supabase Realtime (Live board Spotlight — plan.md § T006) connects over
+    // WebSocket to the same project host. CSP `connect-src` must permit the
+    // `wss://` scheme or the browser rejects the subscription handshake.
+    const supabaseRealtimeOrigin = supabaseOrigin.replace(/^https:/, "wss:");
+
     const csp = [
       "default-src 'self'",
       // Next.js injects inline bootstrap scripts + CSS; dev mode also needs
@@ -78,7 +89,8 @@ const nextConfig: NextConfig = {
       // covers the in-memory previews the image uploader creates.
       `img-src 'self' data: blob: ${supabaseOrigin}`,
       "font-src 'self' data:",
-      `connect-src 'self' ${supabaseOrigin}`,
+      // Include both https (Route Handlers + REST) and wss (Realtime channel).
+      `connect-src 'self' ${supabaseOrigin} ${supabaseRealtimeOrigin}`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

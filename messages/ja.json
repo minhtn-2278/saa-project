@@ -228,6 +228,68 @@
           "timeout": "タイムアウトしました。もう一度お試しください"
         }
       }
+    },
+    "liveBoard": {
+      "eyebrow": "Sun* Annual Awards 2025",
+      "kvBanner": {
+        "title": "TODO: 感謝表明システム",
+        "pillPlaceholder": "TODO: 今日は誰に感謝を伝えますか？"
+      },
+      "highlight": { "title": "HIGHLIGHT KUDOS" },
+      "spotlight": {
+        "title": "SPOTLIGHT BOARD",
+        "totalSuffix": "KUDOS",
+        "searchPlaceholder": "TODO: 検索",
+        "panZoomTooltip": "Pan/Zoom",
+        "recentReceiverPrefix": "TODO: 受け取ったばかり",
+        "reconnecting": "TODO: 再接続中…",
+        "nodeTooltip": "TODO: {name} — 過去24時間で{count}件のKudos"
+      },
+      "allKudos": { "title": "ALL KUDOS" },
+      "filter": {
+        "hashtag": "Hashtag",
+        "department": "TODO: 部署",
+        "clearAria": "TODO: フィルタをクリア"
+      },
+      "card": {
+        "hearts": "{count}",
+        "copyLink": "Copy Link",
+        "viewDetail": "TODO: 詳細を見る",
+        "sentBy": "TODO: 送信者",
+        "sentTo": "TODO: 宛先",
+        "timeFormat": "HH:mm - MM/DD/YYYY",
+        "disabledTitle": "TODO: 近日公開"
+      },
+      "sidebar": {
+        "stats": {
+          "kudosReceived": "TODO: 受け取ったKudos数：",
+          "kudosSent": "TODO: 送ったKudos数：",
+          "heartsReceived": "TODO: もらったハート数：",
+          "boxesOpened": "TODO: 開封済みシークレットボックス：",
+          "boxesUnopened": "TODO: 未開封シークレットボックス："
+        },
+        "openGift": "TODO: ギフトを開ける",
+        "recentReceiversTitle": "TODO: 最新10名のギフト受領者",
+        "mobileTrigger": "TODO: 統計"
+      },
+      "carousel": {
+        "pagination": "{current}/{total}",
+        "prevAria": "TODO: 前のKudo",
+        "nextAria": "TODO: 次のKudo"
+      },
+      "hoaThi": {
+        "one": "TODO: 10件のKudosを受け取り、温かいエネルギーを広め始めました。",
+        "two": "TODO: 20件のKudosを受け取り、日々のポジティブな行動で影響力を示しました。",
+        "three": "TODO: 50件のKudosを受け取り、認識・共有・Sun*スピリットの模範となりました。"
+      },
+      "emptyStates": {
+        "feed": "TODO: まだKudosがありません。",
+        "receiverList": "TODO: データなし",
+        "spotlightQuiet": "TODO: 過去24時間にKudosはありません — 最初の1人になりましょう！"
+      },
+      "toasts": {
+        "heartError": "TODO: ハートを追加できませんでした。もう一度お試しください。"
+      }
     }
   }
 }
