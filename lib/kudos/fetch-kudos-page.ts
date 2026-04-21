@@ -345,6 +345,27 @@ export async function fetchKudosPage(
     uploadsById.set(u.id, u);
   }
 
+  // Resolve department codes for every employee that has a `department_id`
+  // — feeds `serializeKudo`'s `departmentCodeById` so sender/recipient/
+  // mention rows expose `department` as the canonical code.
+  const departmentIds = new Set<number>();
+  for (const e of employeesById.values()) {
+    if (e.department_id != null) departmentIds.add(e.department_id);
+  }
+  const departmentCodeById = new Map<number, string>();
+  if (departmentIds.size > 0) {
+    const { data: deptRows, error: deptError } = await supabase
+      .from("departments")
+      .select("id, code")
+      .in("id", Array.from(departmentIds));
+    if (deptError) {
+      return { ok: false, reason: "DB_ERROR", message: deptError.message };
+    }
+    for (const d of (deptRows ?? []) as Array<{ id: number; code: string }>) {
+      departmentCodeById.set(d.id, d.code);
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // 5. Storage signed URLs — one request per upload, fanned out in parallel.
   //    Cheap for pages with 0–5 images; totally skipped when the whole page
@@ -409,6 +430,7 @@ export async function fetchKudosPage(
         hashtags: kudoHashtags,
         images: imagesOut,
         mentionEmployeeIds: mentionIds,
+        departmentCodeById,
         heartContext: {
           callerEmployeeId,
           heartCount: heartCountByKudo.get(row.id) ?? 0,

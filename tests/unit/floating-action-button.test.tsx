@@ -27,11 +27,6 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-vi.mock("next/navigation", () => ({
-  usePathname: () => "/",
-  useSearchParams: () => new URLSearchParams(""),
-}));
-
 const { FloatingActionButton } = await import(
   "@/components/shared/FloatingActionButton"
 );
@@ -67,12 +62,18 @@ describe("FloatingActionButton", () => {
     expect(screen.getByText("Thể lệ")).toBeInTheDocument();
   });
 
-  it("'Viết Kudo' links to /kudos/write", () => {
+  it("'Viết Kudo' dispatches kudo:open event (no URL change)", () => {
     render(<FloatingActionButton />);
     fireEvent.click(screen.getByLabelText("Quick actions"));
 
-    const kudoLink = screen.getByText("Viết Kudo");
-    expect(kudoLink.closest("a")?.getAttribute("href")).toContain("write=kudo");
+    const events: string[] = [];
+    const listener = (e: Event) => events.push(e.type);
+    window.addEventListener("kudo:open", listener);
+
+    fireEvent.click(screen.getByText("Viết Kudo"));
+    expect(events).toEqual(["kudo:open"]);
+
+    window.removeEventListener("kudo:open", listener);
   });
 
   it("'Thể lệ' links to /rules", () => {

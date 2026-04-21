@@ -135,9 +135,18 @@ export interface ProseMirrorMark {
 export interface PublicKudo {
   id: number;
   senderName: string;
+  /**
+   * Sender's resolved department code (prefers `departments.code` via
+   * `employees.department_id` FK, falls back to the legacy free-text
+   * `employees.department` column). `null` when anonymous or when the
+   * employee has no department assigned.
+   */
+  senderDepartment: string | null;
   senderAvatarUrl: string | null;
   recipientId: number;
   recipientName: string;
+  /** Recipient's resolved department code — same rules as `senderDepartment`. */
+  recipientDepartment: string | null;
   recipientAvatarUrl: string | null;
   title: {
     id: number;

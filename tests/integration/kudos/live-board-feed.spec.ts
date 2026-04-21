@@ -240,6 +240,41 @@ describe.skipIf(!runIntegration)("GET /api/kudos — Live board extensions", () 
   });
 
   // ---------------------------------------------------------------------------
+  // KUDO_LIST_17 — department filter with no matching Kudos
+  // ---------------------------------------------------------------------------
+  it("KUDO_LIST_17: departmentId with no matching kudos returns data=[]", async () => {
+    const admin = getTestAdminClient();
+    const { data: deptRow } = await admin
+      .from("employees")
+      .select("department_id")
+      .eq("id", await getEmployeeIdByEmail(DEPT_EMPLOYEE_EMAIL))
+      .single();
+    const departmentId = deptRow?.department_id as number | null;
+    if (!departmentId) throw new Error("seed missing department_id");
+
+    const res = await authedFetch(
+      `/api/kudos?departmentId=${departmentId}`,
+      callerCookie,
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.data).toEqual([]);
+  });
+
+  // ---------------------------------------------------------------------------
+  // KUDO_LIST_18 — non-existent departmentId → empty
+  // ---------------------------------------------------------------------------
+  it("KUDO_LIST_18: non-existent departmentId returns data=[] (no 404)", async () => {
+    const res = await authedFetch(
+      "/api/kudos?departmentId=9999999",
+      callerCookie,
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.data).toEqual([]);
+  });
+
+  // ---------------------------------------------------------------------------
   // KUDO_LIST_19 — Kudo card carries heart fields
   // ---------------------------------------------------------------------------
   it("KUDO_LIST_19: every card carries heartCount / heartedByMe / canHeart", async () => {

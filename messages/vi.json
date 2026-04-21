@@ -235,7 +235,8 @@
         "pillPlaceholder": "Hôm nay, bạn muốn gửi lời cảm ơn và ghi nhận đến ai?"
       },
       "highlight": {
-        "title": "HIGHLIGHT KUDOS"
+        "title": "HIGHLIGHT KUDOS",
+        "ariaLabel": "Highlight Kudos"
       },
       "spotlight": {
         "title": "SPOTLIGHT BOARD",

@@ -235,7 +235,7 @@
         "title": "TODO: Appreciation system",
         "pillPlaceholder": "TODO: Who would you like to recognize today?"
       },
-      "highlight": { "title": "HIGHLIGHT KUDOS" },
+      "highlight": { "title": "HIGHLIGHT KUDOS", "ariaLabel": "Highlight Kudos" },
       "spotlight": {
         "title": "SPOTLIGHT BOARD",
         "totalSuffix": "KUDOS",

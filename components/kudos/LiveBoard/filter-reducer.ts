@@ -39,7 +39,7 @@ export type LiveBoardFilterAction =
   | { type: "clearFilters" }
   | { type: "resetCarouselIndex" }
   | { type: "nextSlide"; totalSlides: number }
-  | { type: "prevSlide" }
+  | { type: "prevSlide"; totalSlides: number }
   | { type: "setSlide"; index: number; totalSlides: number }
   | { type: "hydrate"; state: Partial<LiveBoardFilterState> };
 
@@ -70,16 +70,21 @@ export function liveBoardFilterReducer(
       return { ...state, carouselIndex: 0 };
 
     case "nextSlide": {
+      // Circular navigation — wraps around at the end.
       const total = Math.max(0, action.totalSlides);
       if (total <= 1) return state;
-      const next = state.carouselIndex + 1;
-      if (next >= total) return state; // ends are disabled; no wrap
+      const next = (state.carouselIndex + 1) % total;
+      if (next === state.carouselIndex) return state;
       return { ...state, carouselIndex: next };
     }
 
     case "prevSlide": {
-      if (state.carouselIndex <= 0) return state;
-      return { ...state, carouselIndex: state.carouselIndex - 1 };
+      // Circular navigation — wraps around at the start.
+      const total = Math.max(0, action.totalSlides);
+      if (total <= 1) return state;
+      const prev = (state.carouselIndex - 1 + total) % total;
+      if (prev === state.carouselIndex) return state;
+      return { ...state, carouselIndex: prev };
     }
 
     case "setSlide": {

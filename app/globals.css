@@ -75,6 +75,11 @@
   --color-live-heart-active: #D4271D;      /* liked heart icon */
   --color-live-heart-inactive: #F17676;    /* unliked heart stroke */
 
+  /* Kudo card inner tokens (Figma node 1949-12832) */
+  --color-live-accent-red: #B72927;        /* hashtag text on cream cards */
+  --color-live-content-tint: #FFECA6;      /* inner body-box on cream cards (Figma 1949-12832) */
+  --color-live-divider-on-cream: rgba(0, 16, 26, 0.15); /* thin dividers inside cream cards */
+
   /* Text on Live-board surfaces */
   --color-live-text-primary: #FFFFFF;
   --color-live-text-secondary: #999999;    /* page numbers, dim */
@@ -103,6 +108,7 @@
     display: none;
   }
 }
+
 
 /* ==========================================================================
  * Viết Kudo modal — thin, themed vertical scrollbar.

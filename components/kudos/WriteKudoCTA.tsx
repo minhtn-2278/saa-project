@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
@@ -11,28 +9,27 @@ interface WriteKudoCTAProps {
 }
 
 /**
- * Shared CTA that opens the Write-Kudo modal by appending `?write=kudo` to
- * the current route. Reused from the FAB, Kudos board, and future Profile
- * "Gửi lời chúc" entry.
+ * Shared CTA that opens the Write-Kudo modal by firing a `kudo:open` window
+ * event — listened to by `WriteKudoModalMount`. No URL change, so the host
+ * page's Server Component (which reads `searchParams`) does NOT re-render
+ * when the user clicks. Deep-links via `?write=kudo` are still honoured by
+ * Mount's URL-sync effect.
  */
 export function WriteKudoCTA({ children, className }: WriteKudoCTAProps) {
   const t = useTranslations("kudos.writeKudo");
-  const pathname = usePathname();
-  const params = useSearchParams();
-
-  const next = new URLSearchParams(params.toString());
-  next.set("write", "kudo");
 
   return (
-    <Link
-      href={`${pathname}?${next.toString()}`}
-      scroll={false}
+    <button
+      type="button"
+      onClick={() => {
+        window.dispatchEvent(new CustomEvent("kudo:open"));
+      }}
       className={
         className ??
         "inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#FFEA9E] text-[#00101A] font-bold"
       }
     >
       {children ?? t("openCta")}
-    </Link>
+    </button>
   );
 }

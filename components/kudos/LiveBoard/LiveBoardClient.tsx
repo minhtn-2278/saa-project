@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useReducer } from "react";
+import { useEffect, useReducer } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { SectionHeader } from "@/components/kudos/LiveBoard/SectionHeader";
 import { KudoFeed } from "@/components/kudos/LiveBoard/KudoFeed/KudoFeed";
+import { FilterBar } from "@/components/kudos/LiveBoard/FilterBar";
+import { HighlightCarousel } from "@/components/kudos/LiveBoard/HighlightCarousel/HighlightCarousel";
 import {
   LiveBoardFilterContext,
   initialLiveBoardFilterState,
@@ -25,18 +27,18 @@ export interface LiveBoardClientProps {
 /**
  * Top-level client island for the Sun* Kudos Live board.
  *
- * **Phase 3 scope (MVP — US1 Browse + US7 Write entry)**: only the ALL
- * KUDOS feed + its enclosing `SectionHeader(C.1)` are mounted. Phase 4–9
- * will bolt on `FilterBar`, `HighlightCarousel`, `StatsSidebar`, and the
- * Spotlight board alongside this island — no rewrite needed.
+ * Phase 5 scope (plan § T064):
+ *   - HIGHLIGHT KUDOS (B.1) header row + B.1 filter bar + B.3 carousel.
+ *   - ALL KUDOS (C.1) header row + C.2 feed.
  *
  * Responsibilities:
- *   - Owns the filter-reducer state + dispatcher context (plan § T044).
+ *   - Owns the filter-reducer state + dispatcher context (plan § T030).
  *   - Mirrors the reducer state to the URL (`?hashtagId=&departmentId=`)
  *     so filters survive refresh + deep-link.
- *   - Seeds the reducer from URL params at mount via `hydrate`.
- *
- * Plan § T044.
+ *   - Sibling components (HighlightCarousel, useKudoFeed) re-read when the
+ *     reducer state changes — one dispatch triggers both refetches.
+ *   - Hashtag chips inside any card dispatch into the same reducer via
+ *     `LiveBoardFilterContext`.
  */
 export function LiveBoardClient({
   initialFeed,
@@ -55,8 +57,6 @@ export function LiveBoardClient({
   });
 
   // URL mirror — keep `?hashtagId=&departmentId=` in sync with reducer state.
-  // Runs on every change after mount; skips the initial sync since the URL
-  // is already the source of truth at hydration time.
   useEffect(() => {
     const next = new URLSearchParams(searchParams.toString());
     writeParam(next, "hashtagId", state.hashtagId);
@@ -70,17 +70,30 @@ export function LiveBoardClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.hashtagId, state.departmentId]);
 
-  // Prepend-on-submit bridge — when the Viết Kudo modal dispatches a
-  // `kudo:created` window event, inject the new row at the top of the feed
-  // via the `useKudoFeed` hook's `prepend` API. Plan § T050 wires this up
-  // in Phase 4 (US7 Write entry); Phase 3 mounts the bridge as a no-op so
-  // later phases only add, never restructure. Currently the bridge is
-  // owned by `KudoFeed` internally (not exposed here) — we keep this
-  // effect as a future hook point.
-  useMemo(() => state, [state]); // no-op retention; intentionally narrow state exposure
-
   return (
     <LiveBoardFilterContext.Provider value={dispatch}>
+      <section
+        aria-labelledby="highlight-kudos-heading"
+        className="flex flex-col gap-6 pt-16 pb-10"
+      >
+        <SectionHeader
+          eyebrow={t("eyebrow")}
+          title={t("highlight.title")}
+          as="h2"
+          trailing={
+            <FilterBar
+              hashtagId={state.hashtagId}
+              departmentId={state.departmentId}
+            />
+          }
+        />
+        <HighlightCarousel
+          hashtagId={state.hashtagId}
+          departmentId={state.departmentId}
+          carouselIndex={state.carouselIndex}
+        />
+      </section>
+
       <section
         aria-labelledby="all-kudos-heading"
         className="flex flex-col gap-6 py-10"

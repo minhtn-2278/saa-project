@@ -7,9 +7,11 @@ const kudo = (id: number, bodyPlain = `body ${id}`): PublicKudo =>
   ({
     id,
     senderName: "Sender",
+    senderDepartment: null,
     senderAvatarUrl: null,
     recipientId: 1,
     recipientName: "Recipient",
+    recipientDepartment: null,
     recipientAvatarUrl: null,
     title: {
       id: 1,

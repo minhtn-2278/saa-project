@@ -20,9 +20,11 @@ const { KudoPost } = await import(
 const baseKudo: PublicKudo = {
   id: 101,
   senderName: "Alice Chen",
+  senderDepartment: "CEVC1",
   senderAvatarUrl: "https://example.com/alice.jpg",
   recipientId: 42,
   recipientName: "Bảo Nguyễn",
+  recipientDepartment: "CEVC10",
   recipientAvatarUrl: "https://example.com/bao.jpg",
   title: {
     id: 1,
@@ -49,16 +51,19 @@ const baseKudo: PublicKudo = {
 };
 
 describe("KudoPost", () => {
-  it("renders sender name, recipient name, body, and time", () => {
+  it("renders sender, recipient, title, body, and time", () => {
     render(<KudoPost kudo={baseKudo} />);
     expect(screen.getByText("Alice Chen")).toBeInTheDocument();
     expect(screen.getByText("Bảo Nguyễn")).toBeInTheDocument();
     expect(screen.getByText(/Cảm ơn bạn rất nhiều/)).toBeInTheDocument();
-    // Time format HH:mm - MM/DD/YYYY
     expect(screen.getByRole("time")).toBeInTheDocument();
+    // Title renders centered uppercase — assert by role.
+    expect(
+      screen.getByRole("heading", { name: /Người truyền động lực cho tôi/ }),
+    ).toBeInTheDocument();
   });
 
-  it("renders hashtag chips (up to 5)", () => {
+  it("renders hashtags as plain red text (variant='plain')", () => {
     render(<KudoPost kudo={baseKudo} />);
     expect(screen.getByText("#Dedicated")).toBeInTheDocument();
     expect(screen.getByText("#Teamwork")).toBeInTheDocument();
@@ -89,9 +94,9 @@ describe("KudoPost", () => {
 
   it("renders Copy Link + Xem chi tiết as disabled this release", () => {
     render(<KudoPost kudo={baseKudo} />);
-    const copy = screen.getByRole("button", { name: "Copy Link" });
-    const detail = screen.getByRole("button", { name: "Xem chi tiết" });
-    expect(copy).toBeDisabled();
-    expect(detail).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Copy Link" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Xem chi tiết" }),
+    ).toBeDisabled();
   });
 });

@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { PencilIcon } from "@/components/ui/icons/PencilIcon";
 import { KudosLogoIcon } from "@/components/ui/icons/KudosLogoIcon";
@@ -10,22 +9,9 @@ import { RulesIcon } from "@/components/ui/icons/RulesIcon";
 
 export function FloatingActionButton() {
   const t = useTranslations("homepage");
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-
-  const writeKudoHref = (() => {
-    const params = new URLSearchParams(searchParams?.toString() ?? "");
-    params.set("write", "kudo");
-    return `${pathname ?? "/"}?${params.toString()}`;
-  })();
-
-  const fabOptions = [
-    { href: writeKudoHref, labelKey: "fab.writeKudo", Icon: PencilIcon },
-    { href: "/rules", labelKey: "fab.rules", Icon: RulesIcon },
-  ] as const;
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -57,18 +43,27 @@ export function FloatingActionButton() {
           role="menu"
           className="absolute bottom-full right-0 mb-3 bg-[#101417] border border-[#2E3940] rounded-xl shadow-lg overflow-hidden min-w-[180px]"
         >
-          {fabOptions.map((option) => (
-            <Link
-              key={option.href}
-              href={option.href}
-              role="menuitem"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 px-5 py-3.5 text-sm font-bold text-white hover:bg-white/10 motion-safe:transition-colors"
-            >
-              <option.Icon size={18} />
-              {t(option.labelKey)}
-            </Link>
-          ))}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setIsOpen(false);
+              window.dispatchEvent(new CustomEvent("kudo:open"));
+            }}
+            className="w-full flex items-center gap-3 px-5 py-3.5 text-sm font-bold text-white hover:bg-white/10 motion-safe:transition-colors"
+          >
+            <PencilIcon size={18} />
+            {t("fab.writeKudo")}
+          </button>
+          <Link
+            href="/rules"
+            role="menuitem"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 px-5 py-3.5 text-sm font-bold text-white hover:bg-white/10 motion-safe:transition-colors"
+          >
+            <RulesIcon size={18} />
+            {t("fab.rules")}
+          </Link>
         </div>
       )}
 

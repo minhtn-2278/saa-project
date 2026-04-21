@@ -448,30 +448,31 @@ async function resolveTitleByName(
     .maybeSingle();
   const nextSort = ((top?.sort_order as number | undefined) ?? 0) + 1;
 
-  const { data: upserted, error: upsertError } = await supabase
+  // Plain INSERT: `titles.slug` is guarded by a *partial* unique index
+  // (`WHERE deleted_at IS NULL`), which `.upsert({onConflict:"slug"})`
+  // cannot target — Postgres raises "no unique or exclusion constraint
+  // matching the ON CONFLICT specification". On the rare race where two
+  // writers create the same new slug concurrently, the loser sees unique
+  // violation 23505 and we read the winner's row back.
+  const { data: inserted, error: insertError } = await supabase
     .from("titles")
-    .upsert(
-      { name, slug, sort_order: nextSort, created_by: callerId },
-      { onConflict: "slug", ignoreDuplicates: true },
-    )
+    .insert({ name, slug, sort_order: nextSort, created_by: callerId })
     .select("id")
     .maybeSingle();
-  if (upsertError) {
-    console.error("resolveTitleByName upsert error", upsertError);
-    return { error: errorResponse("INTERNAL_ERROR", "Unexpected error", 500) };
+  if (inserted?.id) return { id: inserted.id as number };
+
+  if (insertError && insertError.code === "23505") {
+    const { data: raced } = await supabase
+      .from("titles")
+      .select("id")
+      .eq("slug", slug)
+      .is("deleted_at", null)
+      .limit(1)
+      .maybeSingle();
+    if (raced?.id) return { id: raced.id as number };
   }
-  if (upserted?.id) return { id: upserted.id as number };
 
-  // Race: another writer inserted while we were upserting. Read back.
-  const { data: raced } = await supabase
-    .from("titles")
-    .select("id")
-    .eq("slug", slug)
-    .is("deleted_at", null)
-    .limit(1)
-    .maybeSingle();
-  if (raced?.id) return { id: raced.id as number };
-
+  console.error("resolveTitleByName insert error", insertError);
   return { error: errorResponse("INTERNAL_ERROR", "Could not resolve title", 500) };
 }
 
@@ -505,29 +506,29 @@ async function resolveHashtagByLabel(
   }
   if (existing?.id) return { id: existing.id as number };
 
-  const { data: upserted, error: upsertError } = await supabase
+  // Plain INSERT — same reason as `resolveTitleByName`: `hashtags.slug` is
+  // guarded by a partial unique index (`WHERE deleted_at IS NULL`), which
+  // PostgREST's `.upsert({onConflict:"slug"})` cannot target. Treat 23505
+  // as the race-case and read the winner back.
+  const { data: inserted, error: insertError } = await supabase
     .from("hashtags")
-    .upsert(
-      { label, slug, created_by: callerId },
-      { onConflict: "slug", ignoreDuplicates: true },
-    )
+    .insert({ label, slug, created_by: callerId })
     .select("id")
     .maybeSingle();
-  if (upsertError) {
-    console.error("resolveHashtagByLabel upsert error", upsertError);
-    return { error: errorResponse("INTERNAL_ERROR", "Unexpected error", 500) };
+  if (inserted?.id) return { id: inserted.id as number };
+
+  if (insertError && insertError.code === "23505") {
+    const { data: raced } = await supabase
+      .from("hashtags")
+      .select("id")
+      .eq("slug", slug)
+      .is("deleted_at", null)
+      .limit(1)
+      .maybeSingle();
+    if (raced?.id) return { id: raced.id as number };
   }
-  if (upserted?.id) return { id: upserted.id as number };
 
-  const { data: raced } = await supabase
-    .from("hashtags")
-    .select("id")
-    .eq("slug", slug)
-    .is("deleted_at", null)
-    .limit(1)
-    .maybeSingle();
-  if (raced?.id) return { id: raced.id as number };
-
+  console.error("resolveHashtagByLabel insert error", insertError);
   return {
     error: errorResponse("INTERNAL_ERROR", "Could not resolve hashtag", 500),
   };

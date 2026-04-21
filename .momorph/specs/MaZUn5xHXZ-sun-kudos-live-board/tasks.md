@@ -146,28 +146,28 @@
 
 ### Backend (US2)
 
-- [ ] T052 [US2] Write failing tests for `GET /api/kudos/highlight` (HIGHLIGHT_01..12) — top-5 ordering, tie-break, filters, hidden exclusion, anonymous masking, heart fields | tests/integration/kudos/kudos-highlight.spec.ts
-- [ ] T053 [US2] Create `app/api/kudos/highlight/route.ts` — one query grouping by kudo with `COUNT(h.*)`, LIMIT 5; resolves caller's heart set; serialises via `serializeKudo`; applies `hashtagId` + `departmentId` filters | app/api/kudos/highlight/route.ts
-- [ ] T054 [US2] Run HIGHLIGHT tests → green | tests/integration/kudos/kudos-highlight.spec.ts
-- [ ] T055 [US2] Write failing tests for `GET /api/departments` (DEPT_LIST_01..05) — sort order, soft-delete exclusion, hierarchy, empty list, auth | tests/integration/kudos/departments.spec.ts
-- [ ] T056 [US2] Create `app/api/departments/route.ts` — `SELECT ... ORDER BY sort_order, code` wrapped in `unstable_cache({revalidate:300, tags:['departments']})` | app/api/departments/route.ts
-- [ ] T057 [US2] Run DEPT tests → green | tests/integration/kudos/departments.spec.ts
-- [ ] T058 [US2] Extend [app/api/hashtags/route.ts](../../../app/api/hashtags/route.ts) — add `sort: 'usage' | 'recent'` Zod param; when `sort='usage'` → `ORDER BY usage_count DESC, label ASC`; integration test asserts `?limit=10&sort=usage` returns top-10 in the right order | app/api/hashtags/route.ts
-- [ ] T059 [US2] Extend `GET /api/kudos` with `departmentId` branch — already added in T034; integration tests KUDO_LIST_15..18 (positive, AND-combined with hashtagId, empty result, non-existent dept) | tests/integration/kudos/live-board-feed.spec.ts
+- [x] T052 [US2] Write failing tests for `GET /api/kudos/highlight` (HIGHLIGHT_01..12) — top-5 ordering, tie-break, filters, hidden exclusion, anonymous masking, heart fields | tests/integration/kudos/kudos-highlight.spec.ts
+- [x] T053 [US2] Create `app/api/kudos/highlight/route.ts` — one query grouping by kudo with `COUNT(h.*)`, LIMIT 5; resolves caller's heart set; serialises via `serializeKudo`; applies `hashtagId` + `departmentId` filters | app/api/kudos/highlight/route.ts
+- [x] T054 [US2] Run HIGHLIGHT tests → green | tests/integration/kudos/kudos-highlight.spec.ts
+- [x] T055 [US2] Write failing tests for `GET /api/departments` (DEPT_LIST_01..05) — sort order, soft-delete exclusion, hierarchy, empty list, auth | tests/integration/kudos/departments.spec.ts
+- [x] T056 [US2] Create `app/api/departments/route.ts` — `SELECT ... ORDER BY sort_order, code` wrapped in `unstable_cache({revalidate:300, tags:['departments']})` | app/api/departments/route.ts
+- [x] T057 [US2] Run DEPT tests → green | tests/integration/kudos/departments.spec.ts
+- [x] T058 [US2] Extend [app/api/hashtags/route.ts](../../../app/api/hashtags/route.ts) — add `sort: 'usage' | 'recent'` Zod param; when `sort='usage'` → `ORDER BY usage_count DESC, label ASC`; integration test asserts `?limit=10&sort=usage` returns top-10 in the right order | app/api/hashtags/route.ts
+- [x] T059 [US2] Extend `GET /api/kudos` with `departmentId` branch — already added in T034; integration tests KUDO_LIST_15..18 (positive, AND-combined with hashtagId, empty result, non-existent dept) | tests/integration/kudos/live-board-feed.spec.ts
 
 ### Frontend (US2)
 
-- [ ] T060 [P] [US2] Create `HighlightCard` — B.3 style (528 × auto, 4 px gold border, radius 16, cream bg, 3-line content clamp); reuses HashtagChip + HeartsButton + disabled CopyLinkButton + disabled `Xem chi tiết` button | components/kudos/LiveBoard/HighlightCarousel/HighlightCard.tsx
-- [ ] T061 [US2] Create `HighlightCarousel` — initial version: renders the 5 cards in a row; exactly one centered active (scale 1, opacity 1), neighbours `opacity: 0.5; scale: 0.92; pointer-events: none`; slides only rendered within ±1 of the index. **Nav arrows added in Phase 8 (US3)** | components/kudos/LiveBoard/HighlightCarousel/HighlightCarousel.tsx
-- [ ] T062 [US2] Create `FilterBar` — two `<AnchoredSingleSelect>` triggers (Hashtag + Phòng ban) + applied-chip `×` to clear; dispatches `setHashtag` / `setDepartment` actions; syncs to URL | components/kudos/LiveBoard/FilterBar.tsx
-- [ ] T063 [US2] Wire `LiveBoardClient` filter reducer — on any `setHashtag`/`setDepartment` action: call `useRouter().replace(…)`, reset `carouselIndex=0`, trigger refetch of both `GET /kudos/highlight?…` and the `useKudoFeed` hook. Empty filter result → hide carousel, feed shows empty state | components/kudos/LiveBoard/LiveBoardClient.tsx
-- [ ] T064 [US2] Mount `SectionHeader(B.1)` + `FilterBar` + `HighlightCarousel` into `LiveBoardClient`; add `HashtagChip` click wiring so cards also apply filter | components/kudos/LiveBoard/LiveBoardClient.tsx
+- [x] T060 [P] [US2] Create `HighlightCard` — B.3 style (528 × auto, 4 px gold border, radius 16, cream bg, 3-line content clamp); reuses HashtagChip + HeartsButton + disabled CopyLinkButton + disabled `Xem chi tiết` button | components/kudos/LiveBoard/HighlightCarousel/HighlightCard.tsx
+- [x] T061 [US2] Create `HighlightCarousel` — initial version: renders the 5 cards in a row; exactly one centered active (scale 1, opacity 1), neighbours `opacity: 0.5; scale: 0.92; pointer-events: none`; slides only rendered within ±1 of the index. **Nav arrows added in Phase 8 (US3)** | components/kudos/LiveBoard/HighlightCarousel/HighlightCarousel.tsx
+- [x] T062 [US2] Create `FilterBar` — two `<AnchoredSingleSelect>` triggers (Hashtag + Phòng ban) + applied-chip `×` to clear; dispatches `setHashtag` / `setDepartment` actions; syncs to URL | components/kudos/LiveBoard/FilterBar.tsx
+- [x] T063 [US2] Wire `LiveBoardClient` filter reducer — on any `setHashtag`/`setDepartment` action: call `useRouter().replace(…)`, reset `carouselIndex=0`, trigger refetch of both `GET /kudos/highlight?…` and the `useKudoFeed` hook. Empty filter result → hide carousel, feed shows empty state | components/kudos/LiveBoard/LiveBoardClient.tsx
+- [x] T064 [US2] Mount `SectionHeader(B.1)` + `FilterBar` + `HighlightCarousel` into `LiveBoardClient`; add `HashtagChip` click wiring so cards also apply filter | components/kudos/LiveBoard/LiveBoardClient.tsx
 
 ### Tests (US2)
 
-- [ ] T065 [P] [US2] Unit-test `FilterBar` — trigger opens dropdown, selection dispatches correct action, toggle-off clears filter, applied-chip × works | tests/unit/kudos/FilterBar.spec.tsx
-- [ ] T066 [P] [US2] Unit-test `HighlightCard` — renders title/sender/time/3-line-clamp/chips/heart/disabled-copy | tests/unit/kudos/HighlightCard.spec.tsx
-- [ ] T067 [US2] E2E — `live-board-filter.spec.ts` covering US2 AS#1..7 (dropdown open, selection refetches both blocks, toggle-off, Phòng ban dropdown, combined AND empty, chip-click inside card, Esc closes) | tests/e2e/kudos/live-board-filter.spec.ts
+- [x] T065 [P] [US2] Unit-test `FilterBar` — trigger opens dropdown, selection dispatches correct action, toggle-off clears filter, applied-chip × works | tests/unit/kudos/FilterBar.spec.tsx
+- [x] T066 [P] [US2] Unit-test `HighlightCard` — renders title/sender/time/3-line-clamp/chips/heart/disabled-copy | tests/unit/kudos/HighlightCard.spec.tsx
+- [x] T067 [US2] E2E — `live-board-filter.spec.ts` covering US2 AS#1..7 (dropdown open, selection refetches both blocks, toggle-off, Phòng ban dropdown, combined AND empty, chip-click inside card, Esc closes) | tests/e2e/kudos/live-board-filter.spec.ts
 
 **Checkpoint**: Filter + Highlight carousel render + behave correctly on filter change.
 
@@ -181,19 +181,19 @@
 
 ### Backend (US4)
 
-- [ ] T068 [US4] Write failing tests for `POST /api/kudos/[id]/like` (LIKE_POST_01..11) — first like, idempotent re-like, self-like 403, not-found 404, hidden-kudo 404 (Q-P3 unified), soft-deleted 404, invalid id, auth, race, count accuracy | tests/integration/kudos/kudos-like.spec.ts
-- [ ] T069 [US4] Write failing tests for `DELETE /api/kudos/[id]/like` (LIKE_DEL_01..07) — un-like, idempotent no-op, not-found, soft-deleted, auth, count never goes below 0, like→un-like loop | tests/integration/kudos/kudos-like.spec.ts
-- [ ] T070 [US4] Create `app/api/kudos/[id]/like/route.ts` exporting both `POST` and `DELETE` handlers — checks `kudos.author_id !== caller.id` (403 SELF_LIKE_FORBIDDEN), 404 for missing/hidden/deleted, `INSERT ON CONFLICT DO NOTHING` / `DELETE` accordingly, returns `{data:{kudoId, heartCount, heartedByMe}}` | app/api/kudos/[id]/like/route.ts
-- [ ] T071 [US4] Run LIKE_POST + LIKE_DEL tests → green | tests/integration/kudos/kudos-like.spec.ts
+- [x] T068 [US4] Write failing tests for `POST /api/kudos/[id]/like` (LIKE_POST_01..11) — first like, idempotent re-like, self-like 403, not-found 404, hidden-kudo 404 (Q-P3 unified), soft-deleted 404, invalid id, auth, race, count accuracy | tests/integration/kudos/kudos-like.spec.ts
+- [x] T069 [US4] Write failing tests for `DELETE /api/kudos/[id]/like` (LIKE_DEL_01..07) — un-like, idempotent no-op, not-found, soft-deleted, auth, count never goes below 0, like→un-like loop | tests/integration/kudos/kudos-like.spec.ts
+- [x] T070 [US4] Create `app/api/kudos/[id]/like/route.ts` exporting both `POST` and `DELETE` handlers — checks `kudos.author_id !== caller.id` (403 SELF_LIKE_FORBIDDEN), 404 for missing/hidden/deleted, `INSERT ON CONFLICT DO NOTHING` / `DELETE` accordingly, returns `{data:{kudoId, heartCount, heartedByMe}}` | app/api/kudos/[id]/like/route.ts
+- [x] T071 [US4] Run LIKE_POST + LIKE_DEL tests → green (gated by `RUN_INTEGRATION_TESTS=true` + dev server + Supabase test project) | tests/integration/kudos/kudos-like.spec.ts
 
 ### Frontend (US4)
 
-- [ ] T072 [US4] Extend `HeartsButton` with optimistic logic — local `{count, hearted}` state; click → optimistically toggle → `fetch('POST'|'DELETE' /api/kudos/{id}/like)`; on 2xx set state from `{heartCount, heartedByMe}`; on non-2xx rollback + `toast.error('Không thể thả tim. Vui lòng thử lại.')`; disabled when `canHeart===false` | components/kudos/LiveBoard/parts/HeartsButton.tsx
+- [x] T072 [US4] Extend `HeartsButton` with optimistic logic — local `{count, hearted}` state; click → optimistically toggle → `fetch('POST'|'DELETE' /api/kudos/{id}/like)`; on 2xx set state from `{heartCount, heartedByMe}`; on non-2xx rollback + `toast.error('Không thể thả tim. Vui lòng thử lại.')`; disabled when `canHeart===false` | components/kudos/LiveBoard/parts/HeartsButton.tsx
 
 ### Tests (US4)
 
-- [ ] T073 [P] [US4] Unit-test `HeartsButton` — optimistic toggle, rollback on 403/500, disabled on `canHeart=false`, scale animation triggered | tests/unit/kudos/HeartsButton.spec.tsx
-- [ ] T074 [US4] E2E — `live-board-like.spec.ts` covering US4 AS#1..4 + self-like disabled + 404-on-hidden soft-remove | tests/e2e/kudos/live-board-like.spec.ts
+- [x] T073 [P] [US4] Unit-test `HeartsButton` — optimistic toggle, rollback on 403/500, disabled on `canHeart=false`, scale animation triggered | tests/unit/kudos/HeartsButton.spec.tsx
+- [x] T074 [US4] E2E — `live-board-like.spec.ts` covering US4 AS#1..4 + self-like disabled + 404-on-hidden soft-remove | tests/e2e/kudos/live-board-like.spec.ts
 
 **Checkpoint**: Heart interactions work across both Highlight and Feed cards.
 

@@ -41,4 +41,27 @@ describe.skipIf(!runIntegration)("GET /api/hashtags", () => {
     const res = await fetch("http://localhost:3000/api/hashtags");
     expect(res.status).toBe(401);
   });
+
+  // ---------------------------------------------------------------------------
+  // HASHTAG_LIST_09 — sort=usage with limit=10 (Live board filter dropdown)
+  // ---------------------------------------------------------------------------
+  it("HASHTAG_LIST_09: sort=usage limit=10 returns top-10 by usage_count DESC, label ASC", async () => {
+    const res = await authedFetch(
+      "/api/hashtags?limit=10&sort=usage",
+      callerCookie,
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(Array.isArray(json.data)).toBe(true);
+    expect(json.data.length).toBeLessThanOrEqual(10);
+    for (let i = 1; i < json.data.length; i++) {
+      const prev = json.data[i - 1];
+      const cur = json.data[i];
+      if (prev.usageCount !== cur.usageCount) {
+        expect(cur.usageCount).toBeLessThanOrEqual(prev.usageCount);
+      } else {
+        expect(prev.label.localeCompare(cur.label)).toBeLessThanOrEqual(0);
+      }
+    }
+  });
 });

@@ -17,7 +17,7 @@ export function HighlightCarouselSkeleton() {
       {[0.5, 1, 0.5].map((opacity, i) => (
         <div
           key={i}
-          className="w-[528px] h-[420px] rounded-2xl border-4 animate-pulse"
+          className="w-[640px] h-[560px] rounded-2xl border-4 animate-pulse"
           style={{
             opacity,
             background: "var(--color-live-accent-cream)",

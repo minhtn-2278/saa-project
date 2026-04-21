@@ -235,7 +235,7 @@
         "title": "TODO: 感謝表明システム",
         "pillPlaceholder": "TODO: 今日は誰に感謝を伝えますか？"
       },
-      "highlight": { "title": "HIGHLIGHT KUDOS" },
+      "highlight": { "title": "HIGHLIGHT KUDOS", "ariaLabel": "Highlight Kudos" },
       "spotlight": {
         "title": "SPOTLIGHT BOARD",
         "totalSuffix": "KUDOS",

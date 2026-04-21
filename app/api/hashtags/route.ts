@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentEmployee } from "@/lib/auth/current-employee";
 import {
@@ -7,22 +6,22 @@ import {
   errorResponse,
   zodErrorToResponse,
 } from "@/lib/kudos/api-responses";
+import { hashtagsListParamsSchema } from "@/lib/validations/live-board";
 import type { HashtagRow } from "@/types/kudos";
 
-const listHashtagsParamsSchema = z.object({
-  q: z
-    .string()
-    .trim()
-    .optional()
-    .transform((v) => (v && v.length > 0 ? v : undefined)),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-});
-
 /**
- * GET /api/hashtags — search/list active hashtags.
- * Spec: HASHTAG_LIST_01, 05, 08 (Phase 3 scope).
- *   - No `q`: return top `limit` hashtags ordered by usage_count desc.
- *   - With `q`: case-insensitive prefix match on slug (derived lower + NFC).
+ * GET /api/hashtags — search / list active hashtags.
+ *
+ * Modes (plan § T058):
+ *   - `?q=<text>` → case-insensitive prefix match on slug (ordered by slug).
+ *   - `?sort=usage` → top `limit` hashtags by usage_count DESC, label ASC.
+ *     Drives the Live-board Hashtag filter dropdown (B.1.1 → Figma JWpsISMAaM)
+ *     which the plan caps at `limit=10` per Q-A2.
+ *   - `?sort=recent` (default when no `q`) → preserves the Viết Kudo
+ *     typeahead behaviour by ordering on usage_count DESC.
+ *
+ * Search (`q`) takes precedence over `sort` — both modes are still ordered
+ * deterministically so the UI can render stable lists.
  */
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -37,25 +36,33 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const raw = {
+  const parsed = hashtagsListParamsSchema.safeParse({
     q: url.searchParams.get("q") ?? undefined,
     limit: url.searchParams.get("limit") ?? undefined,
-  };
-  const parsed = listHashtagsParamsSchema.safeParse(raw);
+    sort: url.searchParams.get("sort") ?? undefined,
+  });
   if (!parsed.success) return zodErrorToResponse(parsed.error);
+  const { q, limit, sort } = parsed.data;
 
   let query = supabase
     .from("hashtags")
     .select("id, label, slug, usage_count, created_by, deleted_at")
     .is("deleted_at", null)
-    .limit(parsed.data.limit);
+    .limit(limit);
 
-  if (parsed.data.q) {
-    const normalised = parsed.data.q.normalize("NFC").toLowerCase();
+  if (q && q.length > 0) {
+    const normalised = q.normalize("NFC").toLowerCase();
     // PostgREST `ilike` pattern — escape `%` and `_` so user input is literal.
     const escaped = normalised.replace(/[%_]/g, (c) => `\\${c}`);
-    query = query.ilike("slug", `${escaped}%`).order("slug", { ascending: true });
+    query = query
+      .ilike("slug", `${escaped}%`)
+      .order("slug", { ascending: true });
+  } else if (sort === "usage") {
+    query = query
+      .order("usage_count", { ascending: false })
+      .order("label", { ascending: true });
   } else {
+    // sort === 'recent' — default, preserves Viết Kudo behaviour.
     query = query.order("usage_count", { ascending: false });
   }
 

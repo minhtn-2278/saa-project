@@ -155,12 +155,19 @@ export function serializeKudo(
       avatarUrl: e.avatar_url,
     }));
 
+  // Anonymous Kudos mask the sender department too — the author's
+  // department would leak identity signals otherwise.
+  const senderDepartment =
+    kudo.is_anonymous || !author ? null : resolveDepartment(author);
+
   const result: PublicKudo = {
     id: kudo.id,
     senderName,
+    senderDepartment,
     senderAvatarUrl,
     recipientId: recipient.id,
     recipientName: recipient.full_name,
+    recipientDepartment: resolveDepartment(recipient),
     recipientAvatarUrl: recipient.avatar_url,
     title: {
       id: title.id,

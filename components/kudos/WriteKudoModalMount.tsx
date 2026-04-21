@@ -50,12 +50,21 @@ export function WriteKudoModalMount({
   // `open` is driven by local state, not directly by the URL, so we can
   // unmount the modal instantly on close without waiting for the Next.js
   // router navigation (which typically takes 50–200 ms). We still sync
-  // from the URL so deep links + FAB clicks that push `?write=kudo` still
-  // open the modal.
+  // from the URL so deep links that push `?write=kudo` open the modal.
   const [open, setOpen] = useState(urlOpen);
   useEffect(() => {
     setOpen(urlOpen);
   }, [urlOpen]);
+
+  // Event-driven opener — lets the CTA / FAB open the modal without a URL
+  // change (which would re-render the page's Server Component and re-run
+  // its DB loaders). Deep-linking via `?write=kudo` stays supported above.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onOpen = () => setOpen(true);
+    window.addEventListener("kudo:open", onOpen);
+    return () => window.removeEventListener("kudo:open", onOpen);
+  }, []);
 
   const [titles, setTitles] = useState<TitlePreview[]>(initialTitles ?? []);
   const [topHashtags, setTopHashtags] = useState<HashtagPreview[]>(
@@ -105,6 +114,9 @@ export function WriteKudoModalMount({
   pathnameRef.current = pathname;
   const handleClose = useCallback(() => {
     setOpen(false);
+    // Only rewrite the URL if it actually carries `?write=kudo` — otherwise
+    // we'd trigger a needless Server Component re-render on every close.
+    if (paramsRef.current.get("write") !== "kudo") return;
     const next = new URLSearchParams(paramsRef.current.toString());
     next.delete("write");
     const qs = next.toString();

@@ -80,29 +80,43 @@ describe("liveBoardFilterReducer", () => {
       expect(next.carouselIndex).toBe(2);
     });
 
-    it("nextSlide is a no-op at the last slide", () => {
-      const before = stateWith({ carouselIndex: 4 });
-      const next = liveBoardFilterReducer(before, {
+    it("nextSlide wraps to 0 at the last slide (circular carousel)", () => {
+      const next = liveBoardFilterReducer(stateWith({ carouselIndex: 4 }), {
         type: "nextSlide",
         totalSlides: 5,
       });
-      expect(next).toBe(before);
+      expect(next.carouselIndex).toBe(0);
     });
 
-    it("prevSlide goes back but not below 0", () => {
+    it("nextSlide is a no-op when total ≤ 1", () => {
+      const before = stateWith({ carouselIndex: 0 });
+      expect(
+        liveBoardFilterReducer(before, { type: "nextSlide", totalSlides: 1 }),
+      ).toBe(before);
+    });
+
+    it("prevSlide goes back when not at index 0", () => {
       expect(
         liveBoardFilterReducer(stateWith({ carouselIndex: 2 }), {
           type: "prevSlide",
+          totalSlides: 5,
         }).carouselIndex,
       ).toBe(1);
-      // At index 0 the reducer returns the same reference (no-op) — compare
-      // against the input, not the exported `initialLiveBoardFilterState`
-      // (they're structurally equal but not referentially identical after
-      // going through `stateWith`'s spread).
-      const zeroState = stateWith({ carouselIndex: 0 });
+    });
+
+    it("prevSlide wraps to last at index 0 (circular carousel)", () => {
+      const next = liveBoardFilterReducer(stateWith({ carouselIndex: 0 }), {
+        type: "prevSlide",
+        totalSlides: 5,
+      });
+      expect(next.carouselIndex).toBe(4);
+    });
+
+    it("prevSlide is a no-op when total ≤ 1", () => {
+      const before = stateWith({ carouselIndex: 0 });
       expect(
-        liveBoardFilterReducer(zeroState, { type: "prevSlide" }),
-      ).toBe(zeroState);
+        liveBoardFilterReducer(before, { type: "prevSlide", totalSlides: 1 }),
+      ).toBe(before);
     });
 
     it("setSlide clamps into [0, total-1]", () => {

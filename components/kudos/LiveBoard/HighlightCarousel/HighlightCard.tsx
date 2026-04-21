@@ -10,31 +10,32 @@ import { HeartsButton } from "@/components/kudos/LiveBoard/parts/HeartsButton";
 import { CopyLinkButton } from "@/components/kudos/LiveBoard/parts/CopyLinkButton";
 import type { PublicKudo } from "@/types/kudos";
 
-interface KudoPostProps {
+interface HighlightCardProps {
   kudo: PublicKudo;
+  /**
+   * Whether this card is the currently-focused slide. Neighbours render at
+   * half opacity + 92 % scale (see design-style.md § B.2). Passed by the
+   * carousel wrapper so the card itself stays a pure render.
+   */
+  focused?: boolean;
 }
 
 /**
- * ALL KUDOS feed card — laid out to match Figma node `1949-12832`.
+ * B.3 Highlight card — matches Figma node `1949-12832` (same Kudo visual
+ * as [KudoPost], narrower 528 px width + gold border + 3-line body clamp).
  *
- * Structure (top → bottom):
- *   1. Header row — two centered columns (sender / recipient) separated by
- *      a paper-plane icon. Each column stacks avatar → name → sub-line
- *      (department code · gamification tier / job title).
- *   2. Divider (1 px, `--color-live-divider-on-cream`).
- *   3. Time — muted, left-aligned.
- *   4. Title (`kudo.title.name`) — centered, uppercase, bold.
- *   5. Content box — softer cream tint, rounded, bold body text with a
- *      5-line clamp.
- *   6. Attachment grid (up to 5 × 80 px thumbs).
- *   7. Hashtags — plain red bold text, wrap.
+ * Structure mirrors `KudoPost`:
+ *   1. Header — two centered columns + send icon.
+ *   2. Divider.
+ *   3. Time.
+ *   4. Title (centered, uppercase).
+ *   5. Content box (tinted, 3-line clamp).
+ *   6. Attachment grid.
+ *   7. Hashtags (red plain text).
  *   8. Divider.
- *   9. Footer — hearts (L) + Copy Link (R). `Xem chi tiết` removed per Q-A1.
- *
- * Visual tokens follow design-style.md § C.3 refreshed to the 1949-12832
- * node. Anonymity masking already applied by the serializer.
+ *   9. Footer — hearts + Copy Link.
  */
-export function KudoPost({ kudo }: KudoPostProps) {
+export function HighlightCard({ kudo, focused = true }: HighlightCardProps) {
   const t = useTranslations("kudos.liveBoard.card");
   const heartCount = kudo.heartCount ?? 0;
   const heartedByMe = kudo.heartedByMe ?? false;
@@ -47,10 +48,6 @@ export function KudoPost({ kudo }: KudoPostProps) {
     isAnonymous: kudo.isAnonymous,
     subtitle: kudo.senderDepartment,
   };
-
-  // Recipient sub-line mirrors the Figma `CEVC10 · Legend Hero` layout —
-  // we display the recipient's department code here; the tier / "Legend
-  // Hero" badge is a future gamification feature (Q-P4).
   const recipient = {
     id: kudo.recipientId,
     name: kudo.recipientName,
@@ -61,22 +58,39 @@ export function KudoPost({ kudo }: KudoPostProps) {
 
   return (
     <article
-      aria-labelledby={`kudo-${kudo.id}-sender`}
-      className="w-full max-w-[680px] rounded-3xl p-6 md:p-8 flex flex-col gap-5"
+      aria-labelledby={`highlight-${kudo.id}-sender`}
+      aria-hidden={!focused || undefined}
+      tabIndex={focused ? 0 : -1}
+      className={[
+        "w-[640px] max-w-full rounded-2xl p-5 md:p-6 flex flex-col gap-3 shrink-0",
+        // Fixed vertical footprint — every card in the carousel is exactly
+        // this tall regardless of content. `overflow-hidden` is the backstop
+        // for very long hashtag rows / attachments; the body paragraph has
+        // its own `line-clamp` so the primary truncation is a clean `…`.
+        "h-[560px] max-h-[560px] overflow-hidden",
+        "shadow-[0_4px_4px_rgba(0,0,0,0.25)]",
+        "transition-[opacity,transform] duration-300 ease-out",
+        focused
+          ? "opacity-100 scale-100"
+          : "opacity-50 scale-[0.92] pointer-events-none",
+      ].join(" ")}
       style={{
         background: "var(--color-live-accent-cream)",
         color: "var(--color-live-text-on-cream)",
-        boxShadow: "var(--shadow-live-card)",
+        border: "4px solid var(--color-live-accent-gold)",
       }}
     >
-      {/* 1. Header — two columns + centered send icon */}
+      {/* 1. Header */}
       <header className="flex items-center gap-3">
-        <PartyColumn labelId={`kudo-${kudo.id}-sender`} party={sender} />
+        <PartyColumn
+          labelId={`highlight-${kudo.id}-sender`}
+          party={sender}
+        />
         <span
           aria-hidden
           className="shrink-0 text-[var(--color-live-text-on-cream)]"
         >
-          <SendIcon size={28} />
+          <SendIcon size={24} />
         </span>
         <PartyColumn party={recipient} />
       </header>
@@ -91,23 +105,23 @@ export function KudoPost({ kudo }: KudoPostProps) {
       {/* 3. Time */}
       <time
         dateTime={kudo.createdAt}
-        className="text-sm md:text-base"
+        className="text-sm"
         style={{ color: "rgba(0, 16, 26, 0.60)" }}
       >
         {formatTime(kudo.createdAt)}
       </time>
 
       {/* 4. Title */}
-      <h3 className="text-center text-lg md:text-xl font-bold tracking-[0.06em] uppercase">
+      <h3 className="text-center text-base md:text-lg font-bold tracking-[0.06em] uppercase">
         {kudo.title.name}
       </h3>
 
-      {/* 5. Content box (tinted) */}
+      {/* 5. Content box — fixed height, 4-line clamp + ellipsis */}
       <div
-        className="rounded-2xl px-6 py-5"
+        className="rounded-xl px-5 py-4 h-[170px] overflow-hidden"
         style={{ background: "var(--color-live-content-tint)" }}
       >
-        <p className="text-base md:text-lg font-bold leading-relaxed whitespace-pre-wrap line-clamp-5">
+        <p className="text-sm md:text-base font-bold leading-relaxed whitespace-pre-wrap line-clamp-4">
           {kudo.bodyPlain}
         </p>
       </div>
@@ -115,7 +129,7 @@ export function KudoPost({ kudo }: KudoPostProps) {
       {/* 6. Attachments */}
       {kudo.images.length > 0 ? <AttachmentGrid images={kudo.images} /> : null}
 
-      {/* 7. Hashtags — red plain text */}
+      {/* 7. Hashtags */}
       {kudo.hashtags.length > 0 ? (
         <ul
           className="flex flex-wrap gap-x-3 gap-y-1 line-clamp-2"
@@ -129,14 +143,14 @@ export function KudoPost({ kudo }: KudoPostProps) {
         </ul>
       ) : null}
 
-      {/* 8. Divider */}
+      {/* 8. Divider (mt-auto pushes divider + footer to the card's bottom) */}
       <hr
         aria-hidden
-        className="w-full h-px border-0"
+        className="w-full h-px border-0 mt-auto"
         style={{ background: "var(--color-live-divider-on-cream)" }}
       />
 
-      {/* 9. Footer — hearts left, Copy Link + Xem chi tiết right */}
+      {/* 9. Footer */}
       <footer className="flex items-center justify-between">
         <HeartsButton
           kudoId={kudo.id}
@@ -185,26 +199,26 @@ function PartyColumn({ labelId, party }: PartyColumnProps) {
         <Image
           src={party.avatarUrl}
           alt=""
-          width={80}
-          height={80}
-          className="w-20 h-20 rounded-full object-cover"
+          width={64}
+          height={64}
+          className="w-16 h-16 rounded-full object-cover"
           unoptimized
         />
       ) : (
         <span
-          className="w-20 h-20 rounded-full"
+          className="w-16 h-16 rounded-full"
           aria-hidden
           style={{ background: "var(--color-live-accent-gold)" }}
         />
       )}
       <span
         id={labelId}
-        className="font-bold text-base md:text-lg text-center leading-snug line-clamp-1"
+        className="font-bold text-sm md:text-base text-center leading-snug line-clamp-1"
       >
         {party.name}
       </span>
       {party.subtitle ? (
-        <span className="text-xs md:text-sm opacity-70 text-center leading-snug line-clamp-1">
+        <span className="text-xs opacity-70 text-center leading-snug line-clamp-1">
           {party.subtitle}
         </span>
       ) : null}
@@ -212,11 +226,7 @@ function PartyColumn({ labelId, party }: PartyColumnProps) {
   );
 
   const columnClasses = "flex-1 basis-0 min-w-0";
-
-  if (!hasProfile) {
-    return <div className={columnClasses}>{content}</div>;
-  }
-
+  if (!hasProfile) return <div className={columnClasses}>{content}</div>;
   return (
     <ProfileHoverTarget employeeId={party.id} className={columnClasses}>
       {content}
@@ -224,7 +234,6 @@ function PartyColumn({ labelId, party }: PartyColumnProps) {
   );
 }
 
-/** Format an ISO timestamp as `HH:mm - MM/DD/YYYY` per design-style.md § B.4.1. */
 function formatTime(iso: string): string {
   const d = new Date(iso);
   const hh = String(d.getHours()).padStart(2, "0");
