@@ -12,7 +12,8 @@ export interface UseKudoFeedOptions {
   hashtagId: number | null;
   /** Current Department filter — triggers a refetch when it changes. */
   departmentId: number | null;
-  /** Page size (plan § FR-003 = 10 per page). Caller can override for tests. */
+  /** Page size. Default = 10 per page — the "Xem tiếp" button shows once
+   *  the first page is full and the cursor is non-null. Caller can override. */
   limit?: number;
 }
 

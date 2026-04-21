@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service";
 import { getCurrentEmployee } from "@/lib/auth/current-employee";
 import {
   authErrorToResponse,
@@ -98,15 +99,27 @@ export async function GET(request: Request) {
 
   // ---------------------------------------------------------------------------
   // 2. Top-5 ranked kudos + every relation in ONE embedded query.
-  //    `!inner` forces INNER JOIN on kudo_hearts for the count aggregate;
-  //    every other embed is a LEFT JOIN (array-valued ⇒ empty array when
-  //    the relation has no rows). FK hints `!author_id` / `!recipient_id`
+  //
+  //    The view `kudos_with_heart_count` (see
+  //    supabase/migrations/202604220900_kudos_with_heart_count_view.sql)
+  //    exposes `heart_count` as a plain column — aggregation happens INSIDE
+  //    Postgres, not via PostgREST's `count()` aggregate (which Supabase
+  //    disables by default via `db-aggregates-enabled=false`). The view
+  //    inherits every FK relationship from the underlying `kudos` table so
+  //    nested embeds (`author:employees!author_id(…)`, `kudo_hashtags(…)`,
+  //    etc.) resolve the same as a regular `.from("kudos")` query.
+  //
+  //    0-heart kudos are excluded via `.gt("heart_count", 0)` — previously
+  //    enforced by the `kudo_hearts!inner` INNER JOIN.
+  //
+  //    Every embed is a LEFT JOIN (array-valued ⇒ empty array when the
+  //    relation has no rows). FK hints `!author_id` / `!recipient_id`
   //    disambiguate the two FK paths from `kudos` to `employees`.
   // ---------------------------------------------------------------------------
   const embeddedSelect = `
     id, author_id, recipient_id, title_id, body, body_plain,
     is_anonymous, anonymous_alias, status, created_at, updated_at, deleted_at,
-    kudo_hearts!inner(count),
+    heart_count,
     author:employees!author_id(
       id, email, full_name, employee_code, department, department_id,
       job_title, avatar_url, is_admin, deleted_at
@@ -138,17 +151,18 @@ export async function GET(request: Request) {
   `;
 
   let topQuery = supabase
-    .from("kudos")
+    .from("kudos_with_heart_count")
     .select(embeddedSelect)
     .eq("status", "published")
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .gt("heart_count", 0);
 
   if (hashtagKudoIds !== null) topQuery = topQuery.in("id", hashtagKudoIds);
   if (departmentRecipientIds !== null)
     topQuery = topQuery.in("recipient_id", departmentRecipientIds);
 
   topQuery = topQuery
-    .order("count", { referencedTable: "kudo_hearts", ascending: false })
+    .order("heart_count", { ascending: false })
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
     .order("position", { referencedTable: "kudo_images", ascending: true })
@@ -161,7 +175,8 @@ export async function GET(request: Request) {
   }
 
   interface EmbeddedHighlightRow extends KudoRow {
-    kudo_hearts: Array<{ count: number }> | null;
+    /** Pre-computed in the `kudos_with_heart_count` view. */
+    heart_count: number;
     author: EmployeeRow | null;
     recipient: EmployeeRow | null;
     title: TitleRow | null;
@@ -231,6 +246,12 @@ export async function GET(request: Request) {
 
   // ---------------------------------------------------------------------------
   // 4. Storage signed URLs for any embedded images — parallel.
+  //    Uses the **service-role** storage client: `createSignedUrl` requires
+  //    SELECT on `storage.objects` for the private `kudo-images` bucket,
+  //    which the anon / authenticated roles do not have. Using the user
+  //    client silently returned null URLs, so the serialize loop dropped
+  //    every image. Matches the upload route's approach at
+  //    `app/api/uploads/route.ts:80`.
   // ---------------------------------------------------------------------------
   const uploadsById = new Map<number, UploadRow>();
   for (const row of topRows) {
@@ -240,11 +261,15 @@ export async function GET(request: Request) {
   }
   const signedUrlByUpload = new Map<number, string>();
   if (uploadsById.size > 0) {
+    const storage = createServiceRoleClient().storage;
     const signed = await Promise.all(
       Array.from(uploadsById.values()).map(async (u) => {
-        const { data } = await supabase.storage
+        const { data, error } = await storage
           .from(KUDO_IMAGES_BUCKET)
           .createSignedUrl(u.storage_key, SIGNED_URL_TTL_SECONDS);
+        if (error) {
+          console.error("highlight createSignedUrl error", u.id, error);
+        }
         return { id: u.id, url: data?.signedUrl ?? null };
       }),
     );
@@ -303,7 +328,7 @@ export async function GET(request: Request) {
         departmentCodeById,
         heartContext: {
           callerEmployeeId: caller.id,
-          heartCount: row.kudo_hearts?.[0]?.count ?? 0,
+          heartCount: row.heart_count ?? 0,
           likedKudoIds: likedSet,
         },
       }),

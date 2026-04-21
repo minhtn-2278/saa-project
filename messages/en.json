@@ -245,7 +245,11 @@
         "reconnecting": "TODO: Reconnecting…",
         "nodeTooltip": "TODO: {name} — {count} Kudos in the last 24h"
       },
-      "allKudos": { "title": "ALL KUDOS" },
+      "allKudos": {
+        "title": "ALL KUDOS",
+        "loadMore": "Load more",
+        "loading": "Loading…"
+      },
       "filter": {
         "hashtag": "Hashtag",
         "department": "TODO: Department",

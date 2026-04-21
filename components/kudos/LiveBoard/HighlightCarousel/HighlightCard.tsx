@@ -62,17 +62,22 @@ export function HighlightCard({ kudo, focused = true }: HighlightCardProps) {
       aria-hidden={!focused || undefined}
       tabIndex={focused ? 0 : -1}
       className={[
-        "w-[640px] max-w-full rounded-2xl p-5 md:p-6 flex flex-col gap-3 shrink-0",
+        // Responsive width: fills its slot up to 640 px. Parent carousel
+        // sizes the slot so one card fits on narrow viewports and the
+        // neighbouring cards peek on wider ones.
+        "w-full rounded-2xl p-5 md:p-6 flex flex-col gap-3 shrink-0",
         // Fixed vertical footprint — every card in the carousel is exactly
         // this tall regardless of content. `overflow-hidden` is the backstop
         // for very long hashtag rows / attachments; the body paragraph has
         // its own `line-clamp` so the primary truncation is a clean `…`.
         "h-[560px] max-h-[560px] overflow-hidden",
         "shadow-[0_4px_4px_rgba(0,0,0,0.25)]",
-        "transition-[opacity,transform] duration-300 ease-out",
-        focused
-          ? "opacity-100 scale-100"
-          : "opacity-50 scale-[0.92] pointer-events-none",
+        // Non-focused cards render at full opacity + full scale so all
+        // three visible cards look identical — requested by the user over
+        // the original B.2 spec (which called for dim + 92 % neighbours).
+        // `pointer-events-none` on unfocused cards keeps clicks/hovers
+        // targeting the centre card only; tabIndex above handles keyboard.
+        focused ? "" : "pointer-events-none",
       ].join(" ")}
       style={{
         background: "var(--color-live-accent-cream)",

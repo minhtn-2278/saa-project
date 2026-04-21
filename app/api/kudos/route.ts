@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service";
 import { getCurrentEmployee } from "@/lib/auth/current-employee";
 import {
   authErrorToResponse,
@@ -621,7 +622,13 @@ async function serialiseKudoRow(
     hashtags = (h ?? []) as HashtagRow[];
   }
 
-  // Images (signed URLs; Phase 4 populates; Phase 3 returns empty array).
+  // Images (signed URLs).
+  //
+  // Uses the **service-role** storage client for `createSignedUrl`: the
+  // private `kudo-images` bucket doesn't grant SELECT on `storage.objects`
+  // to anon / authenticated, so the user client silently returned null
+  // URLs and the caller saw a kudo with no attachments. Matches the upload
+  // route's approach at `app/api/uploads/route.ts:80`.
   const { data: imageJoin } = await supabase
     .from("kudo_images")
     .select("upload_id, position")
@@ -637,12 +644,16 @@ async function serialiseKudoRow(
     const uploadsById = new Map<number, UploadRow>();
     for (const u of (uploads ?? []) as UploadRow[]) uploadsById.set(u.id, u);
 
+    const storage = createServiceRoleClient().storage;
     for (const j of imageJoin ?? []) {
       const u = uploadsById.get(j.upload_id as number);
       if (!u) continue;
-      const { data: signed } = await supabase.storage
+      const { data: signed, error: signError } = await storage
         .from(KUDO_IMAGES_BUCKET)
         .createSignedUrl(u.storage_key, SIGNED_URL_TTL_SECONDS);
+      if (signError) {
+        console.error("POST /api/kudos createSignedUrl error", u.id, signError);
+      }
       if (!signed?.signedUrl) continue;
       imagesOut.push({
         id: u.id,

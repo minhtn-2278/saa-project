@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { encodeCursor } from "@/lib/kudos/cursor";
 import { serializeKudo } from "@/lib/kudos/serialize-kudo";
+import { createServiceRoleClient } from "@/lib/supabase/service";
 import { KUDO_IMAGES_BUCKET } from "@/lib/constants/kudos";
 import type {
   EmployeeRow,
@@ -368,16 +369,26 @@ export async function fetchKudosPage(
 
   // ---------------------------------------------------------------------------
   // 5. Storage signed URLs — one request per upload, fanned out in parallel.
+  //    Uses the **service-role** storage client: `createSignedUrl` requires
+  //    SELECT on `storage.objects` for the bucket, which the default anon /
+  //    authenticated roles do not have on the private `kudo-images` bucket.
+  //    Using the user client was silently returning null URLs, so the loop
+  //    below dropped every image. Matches the upload route's approach at
+  //    `app/api/uploads/route.ts:80`.
   //    Cheap for pages with 0–5 images; totally skipped when the whole page
   //    has no attachments.
   // ---------------------------------------------------------------------------
   const signedUrlByUpload = new Map<number, string>();
   if (uploadIds.size > 0) {
+    const storage = createServiceRoleClient().storage;
     const signed = await Promise.all(
       Array.from(uploadsById.values()).map(async (u) => {
-        const { data } = await supabase.storage
+        const { data, error } = await storage
           .from(KUDO_IMAGES_BUCKET)
           .createSignedUrl(u.storage_key, SIGNED_URL_TTL_SECONDS);
+        if (error) {
+          console.error("fetchKudosPage createSignedUrl error", u.id, error);
+        }
         return { id: u.id, url: data?.signedUrl ?? null };
       }),
     );
@@ -441,12 +452,26 @@ export async function fetchKudosPage(
   }
 
   // ---------------------------------------------------------------------------
-  // 7. Compute nextCursor when we filled the page exactly.
+  // 7. Compute nextCursor when more pages remain.
+  //
+  //    The initial SSR fetch (from `page.tsx`) does NOT pass a cursor —
+  //    `usingCursor = false` — but we still need a cursor on the response
+  //    so the client's `useKudoFeed` knows a second page exists and shows
+  //    the `Xem tiếp` button. In page mode we have `count` (exact total),
+  //    so `hasMore = count > page * limit` is precise. In cursor mode we
+  //    don't have a total, so we fall back to the `rows.length === limit`
+  //    heuristic — if the next fetch returns zero rows, the client flips
+  //    `isEnd` to true on its own.
   // ---------------------------------------------------------------------------
   let nextCursor: string | null = null;
-  if (usingCursor && rows.length === limit) {
-    const last = rows[rows.length - 1];
-    nextCursor = encodeCursor({ createdAt: last.created_at, id: last.id });
+  if (rows.length === limit) {
+    const hasMore = usingCursor
+      ? true
+      : (count ?? rows.length) > page * limit;
+    if (hasMore) {
+      const last = rows[rows.length - 1];
+      nextCursor = encodeCursor({ createdAt: last.created_at, id: last.id });
+    }
   }
 
   return {

@@ -20,7 +20,7 @@ export const MAX_TITLE_NAME_LENGTH = 60;
 export const MIN_HASHTAG_LABEL_LENGTH = 2;
 export const MAX_HASHTAG_LABEL_LENGTH = 32;
 
-export const KUDO_IMAGES_BUCKET = "kudo-images";
+export const KUDO_IMAGES_BUCKET = process.env.KUDO_IMAGES_BUCKET || "kudo-images";
 
 export const ALLOWED_IMAGE_MIME_TYPES = [
   "image/jpeg",

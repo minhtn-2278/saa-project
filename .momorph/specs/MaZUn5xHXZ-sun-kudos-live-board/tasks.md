@@ -207,27 +207,27 @@
 
 ### Backend (US6)
 
-- [ ] T075 [US6] Write failing tests for `GET /api/me/stats` (STATS_01..07) — live activity, empty caller, anonymous Kudos counted for sender, deleted Kudos excluded, hidden excluded from `heartsReceived`, box counts = 0, auth | tests/integration/kudos/me-stats.spec.ts
-- [ ] T076 [US6] Create `app/api/me/stats/route.ts` — 3 parallel queries (`kudosReceived`, `kudosSent`, `heartsReceived`), hard-coded `boxesOpened: 0, boxesUnopened: 0`; returns `MyStatsResponse` | app/api/me/stats/route.ts
-- [ ] T077 [US6] Run STATS tests → green | tests/integration/kudos/me-stats.spec.ts
+- [x] T075 [US6] Write failing tests for `GET /api/me/stats` (STATS_01..07) — live activity, empty caller, anonymous Kudos counted for sender, deleted Kudos excluded, hidden excluded from `heartsReceived`, box counts = 0, auth | tests/integration/kudos/me-stats.spec.ts
+- [x] T076 [US6] Create `app/api/me/stats/route.ts` — 3 parallel queries (`kudosReceived`, `kudosSent`, `heartsReceived`), hard-coded `boxesOpened: 0, boxesUnopened: 0`; returns `MyStatsResponse` | app/api/me/stats/route.ts
+- [x] T077 [US6] Run STATS tests → green (gated by `RUN_INTEGRATION_TESTS=true` + dev server + Supabase test project) | tests/integration/kudos/me-stats.spec.ts
 
 ### Frontend (US6) — desktop sidebar
 
-- [ ] T078 [P] [US6] Create `StatsPanel` — 5 stat rows + divider at position 3; reads from `MyStatsResponse`; static Secret Box rows show `0`. Sticky variant (desktop) uses `top-[88px] lg:top-[104px]` per plan § Sidebar | components/kudos/LiveBoard/Sidebar/StatsPanel.tsx
-- [ ] T079 [P] [US6] Create `OpenSecretBoxButton` — always-disabled: `disabled` prop hard-wired to `true`; styling from design-style.md § D.1.8 disabled variant (`bg-[#2E3940] text-[#999] cursor-not-allowed`) | components/kudos/LiveBoard/Sidebar/OpenSecretBoxButton.tsx
-- [ ] T080 [P] [US6] Create `RecentReceiversList` — always-empty state this release: `<EmptyState>Chưa có dữ liệu</EmptyState>` inside the D.3 container shell (title + frame only) | components/kudos/LiveBoard/Sidebar/RecentReceiversList.tsx
-- [ ] T081 [US6] Create `StatsSidebar` — 422 px wide, `self-start sticky top-[88px] lg:top-[104px]`, renders `StatsPanel` + `OpenSecretBoxButton` + `RecentReceiversList` | components/kudos/LiveBoard/Sidebar/StatsSidebar.tsx
+- [x] T078 [P] [US6] Create `StatsPanel` — 5 stat rows + divider at position 3; reads from `MyStatsResponse`; static Secret Box rows show `0`. Sticky variant (desktop) uses `top-[88px] lg:top-[104px]` per plan § Sidebar | components/kudos/LiveBoard/Sidebar/StatsPanel.tsx
+- [x] T079 [P] [US6] Create `OpenSecretBoxButton` — always-disabled: `disabled` prop hard-wired to `true`; styling from design-style.md § D.1.8 disabled variant (`bg-[#2E3940] text-[#999] cursor-not-allowed`) | components/kudos/LiveBoard/Sidebar/OpenSecretBoxButton.tsx
+- [x] T080 [P] [US6] Create `RecentReceiversList` — always-empty state this release: `<EmptyState>Chưa có dữ liệu</EmptyState>` inside the D.3 container shell (title + frame only) | components/kudos/LiveBoard/Sidebar/RecentReceiversList.tsx
+- [x] T081 [US6] Create `StatsSidebar` — 422 px wide, `self-start sticky top-[88px] lg:top-[104px]`, renders `StatsPanel` + `OpenSecretBoxButton` + `RecentReceiversList` | components/kudos/LiveBoard/Sidebar/StatsSidebar.tsx
 
 ### Frontend (US6) — mobile bottom-sheet
 
-- [ ] T082 [P] [US6] Create `MobileStatsBottomSheet` — wraps the same panels in a `<dialog>`-based bottom sheet; dismiss on backdrop / Esc / drag-down | components/kudos/LiveBoard/Sidebar/MobileStatsBottomSheet.tsx
-- [ ] T083 [P] [US6] Create `MobileStatsTrigger` — fixed `bottom-4 right-4 md:hidden` pill with gift icon + "Thống kê" label; opens the bottom sheet | components/kudos/LiveBoard/Sidebar/MobileStatsTrigger.tsx
-- [ ] T084 [US6] Mount sidebar into `LiveBoardClient` — 2-col grid for C + D on `lg+`, single-col below with mobile pair | components/kudos/LiveBoard/LiveBoardClient.tsx
+- [x] T082 [P] [US6] Create `MobileStatsBottomSheet` — wraps the same panels in a `<dialog>`-based bottom sheet; dismiss on backdrop / Esc / drag-down | components/kudos/LiveBoard/Sidebar/MobileStatsBottomSheet.tsx
+- [x] T083 [P] [US6] Create `MobileStatsTrigger` — fixed `bottom-4 right-4 md:hidden` pill with gift icon + "Thống kê" label; opens the bottom sheet | components/kudos/LiveBoard/Sidebar/MobileStatsTrigger.tsx
+- [x] T084 [US6] Mount sidebar into `LiveBoardClient` — 2-col grid for C + D on `lg+`, single-col below with mobile pair | components/kudos/LiveBoard/LiveBoardClient.tsx
 
 ### Tests (US6)
 
-- [ ] T085 [P] [US6] Unit-test `StatsPanel` + `OpenSecretBoxButton` — rows render correct values, disabled button has `aria-disabled` + `cursor-not-allowed`, no `onClick` handler attached | tests/unit/kudos/StatsPanel.spec.tsx
-- [ ] T086 [US6] E2E — assert 5 stat rows + disabled Mở quà + empty D.3 + mobile bottom-sheet opens on click (add to `live-board-browse.spec.ts` as a second `describe` block) | tests/e2e/kudos/live-board-browse.spec.ts
+- [x] T085 [P] [US6] Unit-test `StatsPanel` + `OpenSecretBoxButton` — rows render correct values, disabled button has `aria-disabled` + `cursor-not-allowed`, no `onClick` handler attached | tests/unit/kudos/StatsPanel.spec.tsx
+- [x] T086 [US6] E2E — assert 5 stat rows + disabled Mở quà + empty D.3 + mobile bottom-sheet opens on click (add to `live-board-browse.spec.ts` as a second `describe` block) | tests/e2e/kudos/live-board-browse.spec.ts
 
 **Checkpoint**: Sidebar renders with correct values on desktop; mobile bottom-sheet opens correctly.
 
@@ -241,14 +241,14 @@
 
 ### Frontend (US3)
 
-- [ ] T087 [US3] Extend `HighlightCarousel` from Phase 5: add `B.5.1` + `B.5.3` chevron arrow buttons (48×48 round, bg `rgba(255,234,158,0.10)`, border gold); wire to reducer actions `prevSlide` / `nextSlide`; `aria-disabled` + icon 30% opacity at ends | components/kudos/LiveBoard/HighlightCarousel/HighlightCarousel.tsx
-- [ ] T088 [US3] Create `SlidePagination` — B.5.2 chip rendering `{current+1}/{total}` at `--text-h3` with `--color-text-secondary` | components/kudos/LiveBoard/HighlightCarousel/SlidePagination.tsx
-- [ ] T089 [US3] Verify filter change still resets `carouselIndex=0` (already in reducer per T063) + the slide animation is 300 ms ease-out per design-style | components/kudos/LiveBoard/filter-reducer.ts
+- [x] T087 [US3] Extend `HighlightCarousel` from Phase 5: arrow buttons wired to `prevSlide` / `nextSlide`; rail arrows inline + chip arrows via `SlidePagination`. **Divergence**: per user's Phase-5 decision the navigation is circular, so arrows only go inert when `total ≤ 1` — doc-comment explains why | components/kudos/LiveBoard/HighlightCarousel/HighlightCarousel.tsx
+- [x] T088 [US3] Create `SlidePagination` — B.5.2 chip rendering `{current+1}/{total}` with gold current + white `/total`; owns the chip-level prev/next arrows | components/kudos/LiveBoard/HighlightCarousel/SlidePagination.tsx
+- [x] T089 [US3] Verify filter change still resets `carouselIndex=0` — covered by existing reducer tests (setHashtag / setDepartment / clearFilters all reset) in tests/unit/kudos/filter-reducer.test.ts | components/kudos/LiveBoard/filter-reducer.ts
 
 ### Tests (US3)
 
-- [ ] T090 [P] [US3] Unit-test `HighlightCarousel` — arrow disables at ends, pagination text correct, click advances index, filter change resets | tests/unit/kudos/HighlightCarousel.spec.tsx
-- [ ] T091 [US3] E2E — `live-board-carousel.spec.ts` covering US3 AS#1..5 (disabled at ends, arrow advances, fewer than 5 cards pagination, filter reset) | tests/e2e/kudos/live-board-carousel.spec.ts
+- [x] T090 [P] [US3] Unit-test `HighlightCarousel` + `SlidePagination` — chip renders `n/N`, arrow clicks dispatch `prevSlide`/`nextSlide` with live `totalSlides`, arrows disable only when `total ≤ 1` (circular), refetches on hashtagId prop change | tests/unit/kudos/HighlightCarousel.spec.tsx
+- [x] T091 [US3] E2E — `live-board-carousel.spec.ts` covering shipped circular behaviour (AS#1 advance, AS#2 wrap-left, AS#3 wrap-right, AS#4 live pagination, AS#5 filter reset) | tests/e2e/kudos/live-board-carousel.spec.ts
 
 **Checkpoint**: Carousel navigation complete.
 

@@ -7,6 +7,8 @@ import { SectionHeader } from "@/components/kudos/LiveBoard/SectionHeader";
 import { KudoFeed } from "@/components/kudos/LiveBoard/KudoFeed/KudoFeed";
 import { FilterBar } from "@/components/kudos/LiveBoard/FilterBar";
 import { HighlightCarousel } from "@/components/kudos/LiveBoard/HighlightCarousel/HighlightCarousel";
+import { StatsSidebar } from "@/components/kudos/LiveBoard/Sidebar/StatsSidebar";
+import { MobileStatsTrigger } from "@/components/kudos/LiveBoard/Sidebar/MobileStatsTrigger";
 import {
   LiveBoardFilterContext,
   initialLiveBoardFilterState,
@@ -103,13 +105,27 @@ export function LiveBoardClient({
           title={t("allKudos.title")}
           as="h2"
         />
-        <KudoFeed
-          initialFeed={initialFeed}
-          initialNextCursor={initialNextCursor}
-          hashtagId={state.hashtagId}
-          departmentId={state.departmentId}
-        />
+        {/* 2-col on lg+: feed (up to 680 px) left, sidebar (422 px) right.
+            Below lg (iPad + mobile) the sidebar is hidden and
+            `MobileStatsTrigger` brings it back as a bottom-sheet pill —
+            iPad at 768 px doesn't leave enough room for both the 680-px
+            feed card and the 422-px sidebar, so we collapse earlier than
+            the old `md` breakpoint. `min-w-0` on the feed column lets it
+            shrink so the sidebar keeps its fixed width. */}
+        <div className="flex flex-col lg:flex-row lg:items-start gap-8">
+          <div className="flex-1 min-w-0">
+            <KudoFeed
+              initialFeed={initialFeed}
+              initialNextCursor={initialNextCursor}
+              hashtagId={state.hashtagId}
+              departmentId={state.departmentId}
+            />
+          </div>
+          <StatsSidebar />
+        </div>
       </section>
+
+      <MobileStatsTrigger />
     </LiveBoardFilterContext.Provider>
   );
 }

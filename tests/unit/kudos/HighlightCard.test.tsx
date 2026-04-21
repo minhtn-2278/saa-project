@@ -97,13 +97,24 @@ describe("HighlightCard", () => {
     expect(heart).toBeDisabled();
   });
 
-  it("dims neighbour cards when focused=false", () => {
+  it("non-focused cards look identical to focused (no dim/scale) but are click-inert", () => {
+    // Per the user's Phase-8 decision, neighbours render at full opacity and
+    // full scale — only `pointer-events-none` stops them from stealing
+    // clicks from the centred card.
     const { container } = render(
       <HighlightCard kudo={baseKudo} focused={false} />,
     );
     const article = container.querySelector("article");
-    expect(article?.className).toContain("opacity-50");
-    expect(article?.className).toContain("scale-[0.92]");
+    expect(article?.className).not.toContain("opacity-50");
+    expect(article?.className).not.toContain("scale-[0.92]");
     expect(article?.className).toContain("pointer-events-none");
+  });
+
+  it("focused cards do not carry the pointer-events-none inert class", () => {
+    const { container } = render(
+      <HighlightCard kudo={baseKudo} focused={true} />,
+    );
+    const article = container.querySelector("article");
+    expect(article?.className).not.toContain("pointer-events-none");
   });
 });

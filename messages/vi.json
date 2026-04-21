@@ -248,7 +248,9 @@
         "nodeTooltip": "{name} — {count} Kudos nhận trong 24h qua"
       },
       "allKudos": {
-        "title": "ALL KUDOS"
+        "title": "ALL KUDOS",
+        "loadMore": "Xem tiếp",
+        "loading": "Đang tải…"
       },
       "filter": {
         "hashtag": "Hashtag",

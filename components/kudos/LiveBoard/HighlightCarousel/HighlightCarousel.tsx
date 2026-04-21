@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { HighlightCard } from "@/components/kudos/LiveBoard/HighlightCarousel/HighlightCard";
+import { SlidePagination } from "@/components/kudos/LiveBoard/HighlightCarousel/SlidePagination";
 import { HighlightCarouselSkeleton } from "@/components/kudos/LiveBoard/skeletons/HighlightCarouselSkeleton";
 import { ChevronLeftIcon } from "@/components/ui/icons/ChevronLeftIcon";
 import { ChevronRightIcon } from "@/components/ui/icons/ChevronRightIcon";
@@ -22,15 +23,28 @@ export interface HighlightCarouselProps {
 const AUTO_SLIDE_INTERVAL_MS = 5000;
 /** Slide duration — CSS transition on `transform`. */
 const SLIDE_ANIMATION_MS = 600;
-/** Card width (px), matches HighlightCard. */
-const CARD_WIDTH = 640;
+/** Max card width (px) at the widest breakpoint. Narrower viewports shrink
+ *  the slot to fit — see `slotWidth` calc in the component body. */
+const CARD_WIDTH_MAX = 640;
 /** Gap between cards in the strip. */
 const CARD_GAP = 24;
+/** Horizontal breathing room reserved on either side of a shrunken slot
+ *  so the card doesn't touch the viewport edges on small screens. */
+const SLOT_SIDE_PADDING = 16;
 
 /**
  * B.2 — Highlight carousel (Figma screen MaZUn5xHXZ).
  *
  * **Circular carousel** with smooth horizontal gliding.
+ *
+ * NOTE on divergence from the original US3 spec: the acceptance scenarios
+ * in spec.md § US3 called for arrows to be `aria-disabled` at index 0
+ * and N-1. During Phase 5 the user explicitly re-specced the navigation
+ * as infinite / wrap-around so the auto-slide loop is seamless. Arrows
+ * therefore remain enabled whenever `total > 1` and wrap via the reducer
+ * (`(idx ± 1 + N) % N`). Disabled-at-ends styling is kept in the code as
+ * the `!canNavigate` branch so a single-item feed (total ≤ 1) still has
+ * inert arrows.
  *
  * Implementation — "extended strip with boundary clones":
  *   - DOM strip is `[items[N-1], items[0], …, items[N-1], items[0]]`
@@ -61,6 +75,28 @@ export function HighlightCarousel({
   const [error, setError] = useState<Error | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+
+  // Responsive slot sizing — we measure the viewport that houses the strip
+  // and clamp slot width to `min(CARD_WIDTH_MAX, viewport - 2*padding)`.
+  // Updates via ResizeObserver so the translate math follows the card size
+  // as the window shrinks. `viewportWidth = 0` during the first paint — we
+  // fall back to `CARD_WIDTH_MAX` so the DOM doesn't render 0-wide slots.
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const [viewportWidth, setViewportWidth] = useState(0);
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const update = () => setViewportWidth(el.offsetWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const slotWidth =
+    viewportWidth > 0
+      ? Math.min(CARD_WIDTH_MAX, viewportWidth - SLOT_SIDE_PADDING * 2)
+      : CARD_WIDTH_MAX;
 
   const load = useCallback(
     async (hId: number | null, dId: number | null) => {
@@ -212,11 +248,14 @@ export function HighlightCarousel({
   const baseDisplayPosition = total === 1 ? 0 : clampedIndex + 1;
   const displayPosition = wrapOverride ?? baseDisplayPosition;
 
-  const STEP = CARD_WIDTH + CARD_GAP;
+  const STEP = slotWidth + CARD_GAP;
   // CSS-only centering: the strip's x=0 anchor is placed at the viewport's
   // horizontal centre via `left: 50%`, then the transform shifts the strip
-  // so the focused card's centre lands on that anchor. No JS measurement.
-  const translateX = -(displayPosition * STEP + CARD_WIDTH / 2);
+  // so the focused card's centre lands on that anchor. `slotWidth` is
+  // dynamic (shrinks on narrow viewports), so STEP must be recomputed from
+  // the measured value — a hard-coded 640 px meant cards overflowed on
+  // mobile when the viewport was narrower than a single card.
+  const translateX = -(displayPosition * STEP + slotWidth / 2);
 
   return (
     <section
@@ -234,7 +273,10 @@ export function HighlightCarousel({
           label={carouselT("prevAria")}
           onClick={() => dispatch({ type: "prevSlide", totalSlides: total })}
         />
-        <div className="flex-1 min-w-0 overflow-hidden py-6">
+        <div
+          ref={viewportRef}
+          className="flex-1 min-w-0 overflow-hidden py-6"
+        >
           <div
             aria-live="polite"
             className="flex items-stretch will-change-transform relative"
@@ -252,7 +294,7 @@ export function HighlightCarousel({
               <div
                 key={key}
                 className="shrink-0"
-                style={{ width: `${CARD_WIDTH}px` }}
+                style={{ width: `${slotWidth}px` }}
                 aria-hidden={stripIndex !== displayPosition || undefined}
               >
                 <HighlightCard
@@ -271,46 +313,15 @@ export function HighlightCarousel({
         />
       </div>
 
-      {/* B.5.2 pagination — current (gold) + "/total" (white). */}
-      <div className="flex items-center justify-center gap-4">
-        <button
-          type="button"
-          onClick={() => dispatch({ type: "prevSlide", totalSlides: total })}
-          disabled={!canNavigate}
-          aria-label={carouselT("prevAria")}
-          className={[
-            "inline-flex items-center justify-center h-9 w-9 rounded-full transition-opacity text-white",
-            canNavigate
-              ? "opacity-100 hover:opacity-80"
-              : "opacity-30 cursor-not-allowed",
-          ].join(" ")}
-        >
-          <ChevronLeftIcon size={20} />
-        </button>
-        <span className="text-2xl md:text-[28px] font-bold tabular-nums tracking-wide">
-          <span style={{ color: "var(--color-live-accent-gold)" }}>
-            {clampedIndex + 1}
-          </span>
-          <span className="text-white">
-            {" / "}
-            {total}
-          </span>
-        </span>
-        <button
-          type="button"
-          onClick={() => dispatch({ type: "nextSlide", totalSlides: total })}
-          disabled={!canNavigate}
-          aria-label={carouselT("nextAria")}
-          className={[
-            "inline-flex items-center justify-center h-9 w-9 rounded-full transition-opacity text-white",
-            canNavigate
-              ? "opacity-100 hover:opacity-80"
-              : "opacity-30 cursor-not-allowed",
-          ].join(" ")}
-        >
-          <ChevronRightIcon size={20} />
-        </button>
-      </div>
+      {/* B.5 slide nav — extracted so the chrome is unit-testable in
+          isolation and easy to swap into other contexts (e.g. Spotlight
+          prev/next). */}
+      <SlidePagination
+        current={clampedIndex}
+        total={total}
+        onPrev={() => dispatch({ type: "prevSlide", totalSlides: total })}
+        onNext={() => dispatch({ type: "nextSlide", totalSlides: total })}
+      />
     </section>
   );
 }
