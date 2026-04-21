@@ -7,7 +7,12 @@ Static assets consumed by features in `app/`. Each file documents its source
 
 | File | Used by | Source | Status |
 |------|---------|--------|--------|
-| `kv-kudos-wordmark.svg` | `components/kudos/LiveBoard/KvBanner.tsx` (`A` block on screen `MaZUn5xHXZ`) | Figma file `9ypp4enmFmdK3YAFJLIu6C`, node `2940:13437` — the stylised `KUDOS` wordmark inside the KV banner | **PLACEHOLDER** — text-based stand-in with the same bounding box. Replace before launch. |
+| `kv-kudos-wordmark.svg` | `components/kudos/LiveBoard/KvBanner.tsx` (`A` block on screen `MaZUn5xHXZ`) | Figma file `9ypp4enmFmdK3YAFJLIu6C`, node `2940:13437` — the stylised `KUDOS` wordmark with the red brush-stroke accent | **Final export** (593 × 106 intrinsic viewBox) — cream letters + layered red brush strokes with a multiply-blend gradient. Render via `next/image` with `width={593} height={106}` so the aspect ratio stays stable across breakpoints. |
+
+The banner's background art is **not** a file in this directory — the
+KV banner reuses the homepage hero image at
+`/public/images/homepage-hero-bg.png` plus a CSS gradient overlay for
+consistency with the rest of the dashboard.
 
 ## Export instructions (KUDOS wordmark)
 

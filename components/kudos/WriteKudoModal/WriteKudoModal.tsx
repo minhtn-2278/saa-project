@@ -214,6 +214,25 @@ export function WriteKudoModal({
       // editor instance) is discarded automatically.
       clearDraft();
       toast.success(t("toasts.success"));
+
+      // Live-board US7 AS#2: broadcast the created Kudo so any open
+      // `useKudoFeed` instance can optimistically prepend it to the top of
+      // the ALL KUDOS feed without a full page refresh. The server already
+      // returned the serialised `PublicKudo`; the feed hook dedupes by id,
+      // so repeat dispatches or tab-local race conditions are safe.
+      try {
+        const json = (await res.json()) as { data?: unknown };
+        if (json?.data && typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("kudo:created", { detail: json.data }),
+          );
+        }
+      } catch {
+        /* 201 body was already consumed above — this is a best-effort
+           broadcast; if it fails the user just misses the optimistic
+           prepend and sees the new Kudo on next navigation. */
+      }
+
       onClose();
     } catch (err) {
       console.error("POST /api/kudos failed", err);

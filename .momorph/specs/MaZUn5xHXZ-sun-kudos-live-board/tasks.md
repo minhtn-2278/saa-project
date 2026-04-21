@@ -91,29 +91,29 @@
 
 ### Backend (US1) — extend GET /api/kudos
 
-- [ ] T032 [US1] Write failing integration tests for cursor + heart fields: KUDO_LIST_11 (cursor pagination), 12 (exhausted — `nextCursor:null`), 13 (cursor wins over page), 14 (invalid cursor → 422), 19 (heart fields present), 20 (`canHeart:false` on own) | tests/integration/kudos/live-board-feed.spec.ts
-- [ ] T033 [US1] Extend `listKudosParamsSchema` in live-board.ts — add `cursor` (decoded via `decodeCursor`), `departmentId`, `sort` already present | lib/validations/live-board.ts
-- [ ] T034 [US1] Extend `GET` in app/api/kudos/route.ts — add cursor branch (`WHERE (k.created_at, k.id) < decoded` using tuple comparison), `departmentId` branch (`JOIN employees r ON r.id=k.recipient_id AND r.department_id=$`), heart-field resolution via compact `SELECT kudo_id FROM kudo_hearts WHERE kudo_id = ANY($) AND employee_id = $`; populate `meta.nextCursor` when cursor mode | app/api/kudos/route.ts
-- [ ] T035 [US1] Run the failing tests → green | tests/integration/kudos/live-board-feed.spec.ts
+- [x] T032 [US1] Write failing integration tests for cursor + heart fields: KUDO_LIST_11 (cursor pagination), 12 (exhausted — `nextCursor:null`), 13 (cursor wins over page), 14 (invalid cursor → 422), 19 (heart fields present), 20 (`canHeart:false` on own) | tests/integration/kudos/live-board-feed.spec.ts
+- [x] T033 [US1] Extend `listKudosParamsSchema` in live-board.ts — add `cursor` (decoded via `decodeCursor`), `departmentId`, `sort` already present | lib/validations/live-board.ts
+- [x] T034 [US1] Extend `GET` in app/api/kudos/route.ts — add cursor branch (`WHERE (k.created_at, k.id) < decoded` using tuple comparison), `departmentId` branch (`JOIN employees r ON r.id=k.recipient_id AND r.department_id=$`), heart-field resolution via compact `SELECT kudo_id FROM kudo_hearts WHERE kudo_id = ANY($) AND employee_id = $`; populate `meta.nextCursor` when cursor mode | app/api/kudos/route.ts
+- [x] T035 [US1] Run the failing tests → green | tests/integration/kudos/live-board-feed.spec.ts
 
 ### Frontend (US1) — primary components
 
-- [ ] T036 [P] [US1] Create `KvBanner` — title text (Montserrat 36/700) + `<Image src="/assets/kv-kudos-wordmark.svg">` + A.1 pill (reuse existing [WriteKudoCTA](../../../components/kudos/WriteKudoCTA.tsx)); 1152 × 160 layout per design-style | components/kudos/LiveBoard/KvBanner.tsx
-- [ ] T037 [P] [US1] Create `HashtagChip` — displays `#Label`, click dispatches `{type:'setHashtag', id}` via `LiveBoardFilterContext` | components/kudos/LiveBoard/parts/HashtagChip.tsx
-- [ ] T038 [P] [US1] Create `AttachmentGrid` — up to 5 × 80 px square thumbnails via `next/image`, click → lightbox (reuse Viết Kudo's lightbox if any, else inline `<dialog>`) | components/kudos/LiveBoard/parts/AttachmentGrid.tsx
-- [ ] T039 [P] [US1] Create `CopyLinkButton` — always-disabled shell this release; renders `Copy Link` text link in dimmed styling, `aria-disabled="true"`, no click handler (per plan Q-A1) | components/kudos/LiveBoard/parts/CopyLinkButton.tsx
-- [ ] T040 [US1] Create `HeartsButton` skeleton for rendering only — count + heart icon + disabled-when-`canHeart=false` styling; **interactive like/un-like added in Phase 6 (US4)** | components/kudos/LiveBoard/parts/HeartsButton.tsx
-- [ ] T041 [US1] Create `KudoPost` — C.3 card (680 px cream, radius 24, padding 40) wiring: `C.3.1` sender (`ProfileHoverTarget`) → `C.3.2` sent icon → `C.3.3` recipient (`ProfileHoverTarget`) → `C.3.4` time → `C.3.5` content 5-line-clamp → `C.3.6` AttachmentGrid → `C.3.7` HashtagChip list → `C.4` action bar with HeartsButton + CopyLinkButton + disabled `Xem chi tiết` button | components/kudos/LiveBoard/KudoFeed/KudoPost.tsx
-- [ ] T042 [US1] Create `KudoFeed` — virtualised cursor-paginated list using `@tanstack/react-virtual`; `useKudoFeed({ hashtagId, departmentId })` hook built on `IntersectionObserver` + `fetch('/api/kudos?cursor=…&limit=10')`; empty state via `EmptyState` | components/kudos/LiveBoard/KudoFeed/KudoFeed.tsx
-- [ ] T043 [US1] Create `useKudoFeed` hook — manages `{pages, nextCursor, isLoading, isEnd}`; exposes `loadMore()` called by the sentinel | components/kudos/LiveBoard/KudoFeed/use-kudo-feed.ts
-- [ ] T044 [US1] Create `LiveBoardClient` — top-level client island wrapping the filter reducer + provider; initial phase mounts only `KvBanner` + `SectionHeader(C.1)` + `<KudoFeed>`; other blocks added in later phases | components/kudos/LiveBoard/LiveBoardClient.tsx
-- [ ] T045 [US1] Replace the stub [app/(dashboard)/kudos/page.tsx](../../../app/(dashboard)/kudos/page.tsx) — Server Component with blocking `Promise.all` for `GET /api/hashtags?limit=10&sort=usage` + `GET /api/departments` + 4 streaming `<Suspense>` boundaries; passes initial data to `<LiveBoardClient>` | app/(dashboard)/kudos/page.tsx
+- [x] T036 [P] [US1] Create `KvBanner` — title text (Montserrat 36/700) + `<Image src="/assets/kv-kudos-wordmark.svg">` + A.1 pill (reuse existing [WriteKudoCTA](../../../components/kudos/WriteKudoCTA.tsx)); 1152 × 160 layout per design-style | components/kudos/LiveBoard/KvBanner.tsx
+- [x] T037 [P] [US1] Create `HashtagChip` — displays `#Label`, click dispatches `{type:'setHashtag', id}` via `LiveBoardFilterContext` | components/kudos/LiveBoard/parts/HashtagChip.tsx
+- [x] T038 [P] [US1] Create `AttachmentGrid` — up to 5 × 80 px square thumbnails via `next/image`, click → lightbox (reuse Viết Kudo's lightbox if any, else inline `<dialog>`) | components/kudos/LiveBoard/parts/AttachmentGrid.tsx
+- [x] T039 [P] [US1] Create `CopyLinkButton` — always-disabled shell this release; renders `Copy Link` text link in dimmed styling, `aria-disabled="true"`, no click handler (per plan Q-A1) | components/kudos/LiveBoard/parts/CopyLinkButton.tsx
+- [x] T040 [US1] Create `HeartsButton` skeleton for rendering only — count + heart icon + disabled-when-`canHeart=false` styling; **interactive like/un-like added in Phase 6 (US4)** | components/kudos/LiveBoard/parts/HeartsButton.tsx
+- [x] T041 [US1] Create `KudoPost` — C.3 card (680 px cream, radius 24, padding 40) wiring: `C.3.1` sender (`ProfileHoverTarget`) → `C.3.2` sent icon → `C.3.3` recipient (`ProfileHoverTarget`) → `C.3.4` time → `C.3.5` content 5-line-clamp → `C.3.6` AttachmentGrid → `C.3.7` HashtagChip list → `C.4` action bar with HeartsButton + CopyLinkButton + disabled `Xem chi tiết` button | components/kudos/LiveBoard/KudoFeed/KudoPost.tsx
+- [x] T042 [US1] Create `KudoFeed` — virtualised cursor-paginated list using `@tanstack/react-virtual`; `useKudoFeed({ hashtagId, departmentId })` hook built on `IntersectionObserver` + `fetch('/api/kudos?cursor=…&limit=10')`; empty state via `EmptyState` | components/kudos/LiveBoard/KudoFeed/KudoFeed.tsx
+- [x] T043 [US1] Create `useKudoFeed` hook — manages `{pages, nextCursor, isLoading, isEnd}`; exposes `loadMore()` called by the sentinel | components/kudos/LiveBoard/KudoFeed/use-kudo-feed.ts
+- [x] T044 [US1] Create `LiveBoardClient` — top-level client island wrapping the filter reducer + provider; initial phase mounts only `KvBanner` + `SectionHeader(C.1)` + `<KudoFeed>`; other blocks added in later phases | components/kudos/LiveBoard/LiveBoardClient.tsx
+- [x] T045 [US1] Replace the stub [app/(dashboard)/kudos/page.tsx](../../../app/(dashboard)/kudos/page.tsx) — Server Component with blocking `Promise.all` for `GET /api/hashtags?limit=10&sort=usage` + `GET /api/departments` + 4 streaming `<Suspense>` boundaries; passes initial data to `<LiveBoardClient>` | app/(dashboard)/kudos/page.tsx
 
 ### Tests (US1)
 
-- [ ] T046 [P] [US1] Unit-test `KudoPost` — renders sender/recipient/time/content/hashtags/attachments; `canHeart=false` disables heart button | tests/unit/kudos/KudoPost.spec.tsx
-- [ ] T047 [P] [US1] Unit-test `KudoFeed` + `useKudoFeed` — cursor advance, sentinel intersection loads next page, empty state, error toast | tests/unit/kudos/KudoFeed.spec.tsx
-- [ ] T048 [US1] E2E — `live-board-browse.spec.ts` covering US1 AS#1, #3, #4, #5 (banner + feed renders, scroll appends, empty state) | tests/e2e/kudos/live-board-browse.spec.ts
+- [x] T046 [P] [US1] Unit-test `KudoPost` — renders sender/recipient/time/content/hashtags/attachments; `canHeart=false` disables heart button | tests/unit/kudos/KudoPost.spec.tsx
+- [x] T047 [P] [US1] Unit-test `KudoFeed` + `useKudoFeed` — cursor advance, sentinel intersection loads next page, empty state, error toast | tests/unit/kudos/KudoFeed.spec.tsx
+- [x] T048 [US1] E2E — `live-board-browse.spec.ts` covering US1 AS#1, #3, #4, #5 (banner + feed renders, scroll appends, empty state) | tests/e2e/kudos/live-board-browse.spec.ts
 
 **Checkpoint**: Browse feed works end-to-end; cards render but most interactive buttons still disabled/placeholder.
 
@@ -127,12 +127,12 @@
 
 ### Frontend (US7)
 
-- [ ] T049 [US7] Verify [WriteKudoCTA](../../../components/kudos/WriteKudoCTA.tsx) + [WriteKudoModalMount](../../../components/kudos/WriteKudoModalMount.tsx) are already mounted in the dashboard layout; no new code — just confirm the A.1 pill click triggers the `?write=kudo` URL param flow | components/kudos/WriteKudoCTA.tsx
-- [ ] T050 [US7] Add optimistic-prepend on modal submit — after `POST /api/kudos` returns 201, dispatch `{type:'prependKudo', kudo}` to `LiveBoardClient` via a window event `kudo:created` (or shared zustand if added); feed reducer handles it | components/kudos/LiveBoard/LiveBoardClient.tsx
+- [x] T049 [US7] Verify [WriteKudoCTA](../../../components/kudos/WriteKudoCTA.tsx) + [WriteKudoModalMount](../../../components/kudos/WriteKudoModalMount.tsx) are already mounted in the dashboard layout; no new code — just confirm the A.1 pill click triggers the `?write=kudo` URL param flow | components/kudos/WriteKudoCTA.tsx
+- [x] T050 [US7] Add optimistic-prepend on modal submit — after `POST /api/kudos` returns 201, dispatch `{type:'prependKudo', kudo}` to `LiveBoardClient` via a window event `kudo:created` (or shared zustand if added); feed reducer handles it | components/kudos/LiveBoard/LiveBoardClient.tsx
 
 ### Tests (US7)
 
-- [ ] T051 [US7] E2E — `live-board-write-entry.spec.ts` covering US7 AS#1 (pill opens modal) and AS#2 (submitted Kudo visible at top of feed) | tests/e2e/kudos/live-board-write-entry.spec.ts
+- [x] T051 [US7] E2E — `live-board-write-entry.spec.ts` covering US7 AS#1 (pill opens modal) and AS#2 (submitted Kudo visible at top of feed) | tests/e2e/kudos/live-board-write-entry.spec.ts
 
 **Checkpoint**: MVP complete — users can browse + create Kudos end-to-end.
 

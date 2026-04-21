@@ -9,9 +9,10 @@ import {
 } from "@/lib/kudos/api-responses";
 import {
   createKudoRequestSchema,
-  listKudosParamsSchema,
   bodyPlainSchema,
 } from "@/lib/validations/kudos";
+import { liveBoardListKudosParamsSchema } from "@/lib/validations/live-board";
+import { fetchKudosPage } from "@/lib/kudos/fetch-kudos-page";
 import { extractMentionIds, sanitizeBody } from "@/lib/kudos/sanitize-body";
 import { hashtagSlug, titleSlug } from "@/lib/kudos/hashtag-slug";
 import { serializeKudo } from "@/lib/kudos/serialize-kudo";
@@ -336,13 +337,25 @@ export async function POST(request: Request) {
 
 /**
  * GET /api/kudos — paginated published-kudo feed for the board.
- * Spec: KUDO_LIST_01, 05, 09, 10 (Phase 3 scope).
+ * Spec coverage:
+ *   - KUDO_LIST_01, 05, 09, 10 (Viết Kudo Phase 3)
+ *   - KUDO_LIST_11..16, 19, 20 (Live-board Phase 3 — cursor, department,
+ *     heart fields)
+ *
+ * Two pagination modes (caller picks by presence of `cursor`):
+ *   - **Offset** (legacy): `?page=&limit=` → `meta: { page, limit, total }`.
+ *   - **Cursor** (Live board): `?cursor=&limit=` → `meta: { limit, nextCursor }`.
+ *
+ * Cursor format: opaque base64url of `[createdAtIso, id]` — composite tuple
+ * ordering so exact-timestamp ties during burst inserts stay deterministic
+ * (plan Q-P1).
  */
 export async function GET(request: Request) {
   const supabase = await createClient();
 
+  let caller: EmployeeRow;
   try {
-    await getCurrentEmployee(supabase);
+    caller = await getCurrentEmployee(supabase);
   } catch (err) {
     const res = authErrorToResponse(err);
     if (res) return res;
@@ -351,78 +364,42 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const parsed = listKudosParamsSchema.safeParse({
+  const parsed = liveBoardListKudosParamsSchema.safeParse({
     page: url.searchParams.get("page") ?? undefined,
     limit: url.searchParams.get("limit") ?? undefined,
+    cursor: url.searchParams.get("cursor") ?? undefined,
     titleId: url.searchParams.get("titleId") ?? undefined,
     hashtagId: url.searchParams.get("hashtagId") ?? undefined,
+    departmentId: url.searchParams.get("departmentId") ?? undefined,
   });
   if (!parsed.success) return zodErrorToResponse(parsed.error);
-  const { page, limit, titleId, hashtagId } = parsed.data;
+  const { page, limit, cursor, titleId, hashtagId, departmentId } = parsed.data;
 
-  const offset = (page - 1) * limit;
+  const usingCursor = cursor !== undefined;
 
-  let kudoIds: number[];
-  if (hashtagId) {
-    const { data, error } = await supabase
-      .from("kudo_hashtags")
-      .select("kudo_id")
-      .eq("hashtag_id", hashtagId);
-    if (error) {
-      console.error("GET /api/kudos hashtag-join query error", error);
-      return errorResponse("INTERNAL_ERROR", "Unexpected error", 500);
-    }
-    kudoIds = (data ?? []).map((r) => r.kudo_id as number);
-    if (kudoIds.length === 0) {
-      return NextResponse.json({
-        data: [],
-        meta: { page, limit, total: 0 },
-      });
-    }
-  } else {
-    kudoIds = [];
-  }
+  // Delegate to the shared batched helper — one code path for both the
+  // Viết Kudo board (page/offset) and the Live board (cursor). See
+  // `lib/kudos/fetch-kudos-page.ts` for the N+1 avoidance strategy.
+  const result = await fetchKudosPage(supabase, {
+    callerEmployeeId: caller.id,
+    limit,
+    page,
+    cursor,
+    titleId,
+    hashtagId,
+    departmentId,
+  });
 
-  let query = supabase
-    .from("kudos")
-    .select(
-      "id, author_id, recipient_id, title_id, body, body_plain, is_anonymous, anonymous_alias, status, created_at, updated_at, deleted_at",
-      { count: "exact" },
-    )
-    .eq("status", "published")
-    .is("deleted_at", null);
-
-  if (titleId) query = query.eq("title_id", titleId);
-  if (kudoIds.length > 0) query = query.in("id", kudoIds);
-
-  query = query
-    .order("created_at", { ascending: false })
-    .order("id", { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  const { data: kudoRows, error: kudosError, count } = await query;
-  if (kudosError) {
-    console.error("GET /api/kudos query error", kudosError);
+  if (!result.ok) {
+    console.error("GET /api/kudos fetchKudosPage error", result.message);
     return errorResponse("INTERNAL_ERROR", "Could not load kudos", 500);
   }
 
-  const rows = (kudoRows ?? []) as KudoRow[];
-  if (rows.length === 0) {
-    return NextResponse.json({
-      data: [],
-      meta: { page, limit, total: count ?? 0 },
-    });
-  }
-
-  const items: PublicKudo[] = [];
-  for (const row of rows) {
-    const s = await serialiseKudoRow(supabase, row);
-    if (!("error" in s)) items.push(s.kudo);
-  }
-
   return NextResponse.json({
-    data: items,
-    meta: { page, limit, total: count ?? items.length },
+    data: result.items,
+    meta: usingCursor
+      ? { limit, nextCursor: result.nextCursor }
+      : { page, limit, total: result.total ?? 0 },
   });
 }
 
@@ -576,9 +553,16 @@ async function readAndSerialise(
   return serialiseKudoRow(supabase, row as KudoRow);
 }
 
+interface ServialiseKudoHeartContext {
+  callerEmployeeId: number;
+  heartCount: number;
+  likedKudoIds: Set<number>;
+}
+
 async function serialiseKudoRow(
   supabase: SupabaseClient,
   row: KudoRow,
+  heartCtx?: ServialiseKudoHeartContext,
 ): Promise<{ kudo: PublicKudo } | { error: NextResponse }> {
   // Resolve author + recipient + mentions employees.
   const { data: mentionRows } = await supabase
@@ -677,6 +661,13 @@ async function serialiseKudoRow(
     hashtags,
     images: imagesOut,
     mentionEmployeeIds: mentionIds,
+    heartContext: heartCtx
+      ? {
+          callerEmployeeId: heartCtx.callerEmployeeId,
+          heartCount: heartCtx.heartCount,
+          likedKudoIds: heartCtx.likedKudoIds,
+        }
+      : undefined,
   });
 
   return { kudo };
