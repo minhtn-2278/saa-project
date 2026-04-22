@@ -36,17 +36,18 @@ const ALLOWED_MARK_TYPES = new Set([
 ]);
 
 /**
- * Allowed link href prefixes. Both internal Next.js routes and the project's
- * own production domain are allowed; anything else is stripped.
- */
-const LINK_HREF_ALLOWLIST: Array<(href: string) => boolean> = [
-  (href) => href.startsWith("/profile/"),
-  (href) => href.startsWith("https://saa.sun-asterisk.com/"),
-];
-
-/**
- * Returns `true` if the href is safe to keep. Everything else (javascript:,
- * data:, mailto:, external domains) is stripped.
+ * Returns `true` if the href is safe to keep. Policy (aligned with the Add
+ * Link popover's client-side validator — plan § Write Kudo "Add link"):
+ *
+ *   - Internal relative paths (`/profile/1`, `/kudos`, etc.)                → keep
+ *   - Absolute http / https URLs                                            → keep
+ *   - `mailto:` URLs                                                        → keep
+ *   - Anything else (`javascript:`, `data:`, `vbscript:`, bare words)       → strip
+ *
+ * The earlier allow-list (T093) restricted external links to `saa.sun-asterisk.com`
+ * only, which silently dropped every real-world reference a Kudo might want to
+ * cite (Slack threads, GitHub PRs, Figma boards). The security boundary that
+ * actually matters — blocking script-executing pseudo-protocols — is kept.
  */
 function isAllowedLinkHref(raw: unknown): raw is string {
   if (typeof raw !== "string") return false;
@@ -56,7 +57,11 @@ function isAllowedLinkHref(raw: unknown): raw is string {
   if (lower.startsWith("javascript:")) return false;
   if (lower.startsWith("data:")) return false;
   if (lower.startsWith("vbscript:")) return false;
-  return LINK_HREF_ALLOWLIST.some((test) => test(href));
+  if (lower.startsWith("file:")) return false;
+  if (href.startsWith("/")) return true;
+  if (lower.startsWith("http://") || lower.startsWith("https://")) return true;
+  if (lower.startsWith("mailto:")) return true;
+  return false;
 }
 
 function sanitizeMark(mark: ProseMirrorMark): ProseMirrorMark | null {

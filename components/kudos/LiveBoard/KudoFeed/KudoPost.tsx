@@ -8,6 +8,7 @@ import { HashtagChip } from "@/components/kudos/LiveBoard/parts/HashtagChip";
 import { AttachmentGrid } from "@/components/kudos/LiveBoard/parts/AttachmentGrid";
 import { HeartsButton } from "@/components/kudos/LiveBoard/parts/HeartsButton";
 import { CopyLinkButton } from "@/components/kudos/LiveBoard/parts/CopyLinkButton";
+import { KudoBody } from "@/components/kudos/LiveBoard/parts/KudoBody";
 import type { PublicKudo } from "@/types/kudos";
 
 interface KudoPostProps {
@@ -107,9 +108,11 @@ export function KudoPost({ kudo }: KudoPostProps) {
         className="rounded-2xl px-6 py-5"
         style={{ background: "var(--color-live-content-tint)" }}
       >
-        <p className="text-base md:text-lg font-bold leading-relaxed whitespace-pre-wrap line-clamp-5">
-          {kudo.bodyPlain}
-        </p>
+        <KudoBody
+          body={kudo.body}
+          bodyPlain={kudo.bodyPlain}
+          className="text-base md:text-lg font-bold leading-relaxed line-clamp-5"
+        />
       </div>
 
       {/* 6. Attachments */}

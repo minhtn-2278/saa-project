@@ -191,6 +191,14 @@
         "confirm": "Xác nhận huỷ",
         "abort": "Giữ lại"
       },
+      "addLink": {
+        "title": "Thêm đường dẫn",
+        "textLabel": "Nội dung",
+        "urlLabel": "URL",
+        "cancel": "Hủy",
+        "save": "Lưu",
+        "urlInvalid": "Đường dẫn không hợp lệ"
+      },
       "toasts": {
         "success": "Đã gửi Kudo",
         "failure": "Gửi thất bại, vui lòng thử lại",
@@ -244,6 +252,7 @@
         "searchPlaceholder": "Tìm kiếm",
         "panZoomTooltip": "Pan/Zoom",
         "recentReceiverPrefix": "Vừa nhận",
+        "recentReceiverMessage": "{name} đã nhận được một Kudo mới",
         "reconnecting": "Đang kết nối lại…",
         "nodeTooltip": "{name} — {count} Kudos nhận trong 24h qua"
       },

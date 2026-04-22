@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { KudoPost } from "./KudoPost";
 import { useKudoFeed, type UseKudoFeedOptions } from "./use-kudo-feed";
 import { EmptyState } from "@/components/kudos/LiveBoard/parts/EmptyState";
+import { KudoFeedSkeleton } from "@/components/kudos/LiveBoard/skeletons/KudoFeedSkeleton";
 
 export type KudoFeedProps = UseKudoFeedOptions;
 
@@ -40,6 +41,13 @@ export function KudoFeed({
     departmentId,
     limit,
   });
+
+  // First-load + filter-swap show the cream-card skeletons so the feed
+  // reserves its vertical space instead of jumping from 0 → N cards
+  // (plan § T108).
+  if (isFiltering && items.length === 0) {
+    return <KudoFeedSkeleton count={3} />;
+  }
 
   if (!isFiltering && items.length === 0) {
     return <EmptyState>{emptyT("feed")}</EmptyState>;

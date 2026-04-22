@@ -8,6 +8,7 @@ import { HashtagChip } from "@/components/kudos/LiveBoard/parts/HashtagChip";
 import { AttachmentGrid } from "@/components/kudos/LiveBoard/parts/AttachmentGrid";
 import { HeartsButton } from "@/components/kudos/LiveBoard/parts/HeartsButton";
 import { CopyLinkButton } from "@/components/kudos/LiveBoard/parts/CopyLinkButton";
+import { KudoBody } from "@/components/kudos/LiveBoard/parts/KudoBody";
 import type { PublicKudo } from "@/types/kudos";
 
 interface HighlightCardProps {
@@ -126,9 +127,11 @@ export function HighlightCard({ kudo, focused = true }: HighlightCardProps) {
         className="rounded-xl px-5 py-4 h-[170px] overflow-hidden"
         style={{ background: "var(--color-live-content-tint)" }}
       >
-        <p className="text-sm md:text-base font-bold leading-relaxed whitespace-pre-wrap line-clamp-4">
-          {kudo.bodyPlain}
-        </p>
+        <KudoBody
+          body={kudo.body}
+          bodyPlain={kudo.bodyPlain}
+          className="text-sm md:text-base font-bold leading-relaxed line-clamp-4"
+        />
       </div>
 
       {/* 6. Attachments */}

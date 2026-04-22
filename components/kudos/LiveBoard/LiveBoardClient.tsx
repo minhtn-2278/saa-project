@@ -7,6 +7,7 @@ import { SectionHeader } from "@/components/kudos/LiveBoard/SectionHeader";
 import { KudoFeed } from "@/components/kudos/LiveBoard/KudoFeed/KudoFeed";
 import { FilterBar } from "@/components/kudos/LiveBoard/FilterBar";
 import { HighlightCarousel } from "@/components/kudos/LiveBoard/HighlightCarousel/HighlightCarousel";
+import { SpotlightBoard } from "@/components/kudos/LiveBoard/SpotlightBoard/SpotlightBoard";
 import { StatsSidebar } from "@/components/kudos/LiveBoard/Sidebar/StatsSidebar";
 import { MobileStatsTrigger } from "@/components/kudos/LiveBoard/Sidebar/MobileStatsTrigger";
 import {
@@ -94,6 +95,22 @@ export function LiveBoardClient({
           departmentId={state.departmentId}
           carouselIndex={state.carouselIndex}
         />
+      </section>
+
+      {/* B.6 + B.7 — Spotlight board sits between the Highlight carousel
+          and the ALL KUDOS feed. It fetches `/api/spotlight` client-side
+          on mount and subscribes to `kudos` realtime events for the live
+          total + recent-receiver log. */}
+      <section
+        aria-labelledby="live-board-spotlight-heading"
+        className="flex flex-col gap-6 py-10"
+      >
+        <SectionHeader
+          eyebrow={t("eyebrow")}
+          title={t("spotlight.title")}
+          as="h2"
+        />
+        <SpotlightBoard />
       </section>
 
       <section

@@ -4,8 +4,10 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { FieldLabel } from "./parts/FieldLabel";
 import { Chip } from "./parts/Chip";
-import { Combobox, type ComboboxOption } from "./parts/Combobox";
-import { ComboboxCreateRow } from "./parts/ComboboxCreateRow";
+import {
+  HashtagDropdown,
+  type HashtagDropdownItem,
+} from "./HashtagDropdown";
 import { PlusIcon } from "@/components/ui/icons/PlusIcon";
 import { useErrorResolver } from "./parts/resolveError";
 import { MAX_HASHTAGS_PER_KUDO } from "@/lib/constants/kudos";
@@ -99,25 +101,30 @@ export function HashtagPicker({
   const max = MAX_HASHTAGS_PER_KUDO;
   const atLimit = value.length >= max;
 
-  const availableResults = results.filter(
-    (r) => !value.some((v) => v.label.toLowerCase() === r.label.toLowerCase()),
-  );
-
-  const options: ComboboxOption<HashtagPreview>[] = availableResults.map((h) => ({
-    value: String(h.id),
-    label: `#${h.label}`,
-    data: h,
-  }));
+  // Dropdown displays every known hashtag (top list or filtered search) with
+  // a checkmark on the ones already chosen. At the 5-item cap, unchosen rows
+  // become disabled so the user can't blow past the limit in one click.
+  const dropdownItems: HashtagDropdownItem[] = results.map((h) => {
+    const selected = value.some(
+      (v) => v.label.toLowerCase() === h.label.toLowerCase(),
+    );
+    return {
+      ...h,
+      selected,
+      disabled: !selected && atLimit,
+    };
+  });
 
   const trimmed = query.trim();
   const normalized = trimmed.toLowerCase();
   const alreadySelected = value.some(
     (v) => v.label.toLowerCase() === normalized,
   );
-  const exactMatch = availableResults.some(
+  const exactMatchInResults = results.some(
     (r) => r.label.toLowerCase() === normalized,
   );
-  const canCreate = trimmed.length > 0 && !exactMatch && !alreadySelected;
+  const canCreate =
+    trimmed.length > 0 && !exactMatchInResults && !alreadySelected;
   const createHelperKey = canCreate ? validateHashtagLabel(trimmed) : null;
   const createHelper = createHelperKey
     ? resolveError(`hashtag.${createHelperKey}`)
@@ -126,14 +133,26 @@ export function HashtagPicker({
   const createPending = (label: string) => {
     const clean = label.trim();
     if (validateHashtagLabel(clean) !== null) return;
+    if (atLimit) return;
     onAdd({ id: -1, label: clean, pending: true });
     setQuery("");
-    setPopoverOpen(false);
   };
 
   const removeChip = (chip: HashtagPreview) => {
     if (chip.pending) onRemoveByLabel(chip.label);
     else onRemove(chip.id);
+  };
+
+  const toggleFromDropdown = (item: HashtagPreview) => {
+    const existing = value.find(
+      (v) => v.label.toLowerCase() === item.label.toLowerCase(),
+    );
+    if (existing) {
+      removeChip(existing);
+      return;
+    }
+    if (atLimit) return;
+    onAdd(item);
   };
 
   return (
@@ -176,31 +195,37 @@ export function HashtagPicker({
           )}
         </ul>
         {popoverOpen && (
-          <div className="mt-2 w-full sm:w-80">
-            <Combobox<HashtagPreview>
-              value={query}
-              onChange={setQuery}
+          <div className="mt-2">
+            <HashtagDropdown
+              query={query}
+              onQueryChange={setQuery}
               placeholder={t("fields.hashtag.addCta")}
-              options={options}
+              items={dropdownItems}
               loading={loading}
-              disabled={disabled}
               labelledBy={labelId}
-              hideChevron
-              onSelect={(opt) => {
-                onAdd(opt.data);
-                setQuery("");
+              onToggle={toggleFromDropdown}
+              onDismiss={() => {
                 setPopoverOpen(false);
+                setQuery("");
               }}
-              onCreate={
-                canCreate && !createHelperKey ? createPending : undefined
-              }
               footer={
                 canCreate ? (
-                  <ComboboxCreateRow
-                    label={trimmed}
-                    onCreate={createPending}
-                    helperError={createHelper}
-                  />
+                  <button
+                    type="button"
+                    disabled={!!createHelperKey || atLimit}
+                    onClick={() => createPending(trimmed)}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-sm font-bold text-white text-left transition-colors hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <span className="inline-flex items-center gap-2 truncate">
+                      <PlusIcon size={14} />
+                      {t("actions.createNew", { label: trimmed })}
+                    </span>
+                    {createHelper ? (
+                      <span className="ml-2 text-xs font-normal text-[#F17676]">
+                        {createHelper}
+                      </span>
+                    ) : null}
+                  </button>
                 ) : null
               }
             />

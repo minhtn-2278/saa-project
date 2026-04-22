@@ -192,6 +192,14 @@
         "confirm": "Confirm cancel",
         "abort": "Keep editing"
       },
+      "addLink": {
+        "title": "Add link",
+        "textLabel": "Text",
+        "urlLabel": "URL",
+        "cancel": "Cancel",
+        "save": "Save",
+        "urlInvalid": "Invalid URL"
+      },
       "toasts": {
         "success": "Kudo sent",
         "failure": "Send failed, please try again",
@@ -242,6 +250,7 @@
         "searchPlaceholder": "TODO: Search",
         "panZoomTooltip": "Pan/Zoom",
         "recentReceiverPrefix": "TODO: Just received",
+        "recentReceiverMessage": "TODO: {name} just received a new Kudo",
         "reconnecting": "TODO: Reconnecting…",
         "nodeTooltip": "TODO: {name} — {count} Kudos in the last 24h"
       },

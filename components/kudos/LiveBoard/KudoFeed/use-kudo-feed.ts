@@ -89,7 +89,8 @@ export function useKudoFeed({
       if (dId !== null) params.set("departmentId", String(dId));
 
       try {
-        mode === "replace" ? setIsFiltering(true) : setIsLoading(true);
+        if (mode === "replace") setIsFiltering(true);
+        else setIsLoading(true);
         const res = await fetch(`/api/kudos?${params.toString()}`, {
           signal: controller.signal,
           credentials: "include",

@@ -3,6 +3,7 @@
 import { StatsPanel } from "@/components/kudos/LiveBoard/Sidebar/StatsPanel";
 import { RecentReceiversList } from "@/components/kudos/LiveBoard/Sidebar/RecentReceiversList";
 import { useMyStats } from "@/components/kudos/LiveBoard/Sidebar/use-my-stats";
+import { SidebarSkeleton } from "@/components/kudos/LiveBoard/skeletons/SidebarSkeleton";
 
 /**
  * D — right-column sticky sidebar (desktop only, `hidden lg:flex`).
@@ -25,8 +26,14 @@ export function StatsSidebar() {
       aria-label="Thanh bên thống kê"
       className="hidden lg:flex w-[422px] shrink-0 flex-col gap-6 self-start sticky top-[88px] lg:top-[104px]"
     >
-      <StatsPanel stats={stats} />
-      <RecentReceiversList />
+      {stats ? (
+        <>
+          <StatsPanel stats={stats} />
+          <RecentReceiversList />
+        </>
+      ) : (
+        <SidebarSkeleton />
+      )}
     </aside>
   );
 }

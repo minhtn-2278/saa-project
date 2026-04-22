@@ -131,7 +131,11 @@ describe("sanitizeBody — strips disallowed nodes and marks", () => {
     expect(body.content?.[0].content?.[0].marks).toBeUndefined();
   });
 
-  it("strips links with disallowed external domains", () => {
+  it("keeps links to arbitrary https domains", () => {
+    // Policy reversal: the strict TR-006 allow-list was relaxed to accept
+    // any http(s) URL so Kudos authors can reference external sources
+    // (GitHub, Slack, Figma). Dangerous pseudo-protocols are still blocked
+    // by the `strips links with javascript: hrefs` test below.
     const { body } = sanitizeBody(
       doc([
         {
@@ -140,13 +144,17 @@ describe("sanitizeBody — strips disallowed nodes and marks", () => {
             {
               type: "text",
               text: "x",
-              marks: [{ type: "link", attrs: { href: "https://evil.example.com/" } }],
+              marks: [
+                { type: "link", attrs: { href: "https://github.com/org/repo" } },
+              ],
             },
           ],
         },
       ]),
     );
-    expect(body.content?.[0].content?.[0].marks).toBeUndefined();
+    const mark = body.content?.[0].content?.[0].marks?.[0];
+    expect(mark?.type).toBe("link");
+    expect(mark?.attrs?.href).toBe("https://github.com/org/repo");
   });
 
   it("keeps links with internal /profile/ prefix", () => {
@@ -288,8 +296,8 @@ describe("extractBodyPlain", () => {
 // T093 — Phase 4 additions: link allow-list + event handlers + mention ids
 // -----------------------------------------------------------------------------
 
-describe("sanitizeBody — link allow-list (TR-006)", () => {
-  it("strips external href", () => {
+describe("sanitizeBody — link safety policy", () => {
+  it("keeps arbitrary https:// href", () => {
     const { body } = sanitizeBody(
       doc([
         {
@@ -298,14 +306,15 @@ describe("sanitizeBody — link allow-list (TR-006)", () => {
             {
               type: "text",
               text: "x",
-              marks: [{ type: "link", attrs: { href: "https://evil.com/" } }],
+              marks: [{ type: "link", attrs: { href: "https://example.com/" } }],
             },
           ],
         },
       ]),
     );
-    const marks = body.content?.[0]?.content?.[0]?.marks;
-    expect(marks ?? []).toEqual([]);
+    const mark = body.content?.[0]?.content?.[0]?.marks?.[0];
+    expect(mark?.type).toBe("link");
+    expect(mark?.attrs?.href).toBe("https://example.com/");
   });
 
   it("keeps /profile/ href", () => {

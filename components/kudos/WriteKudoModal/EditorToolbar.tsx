@@ -5,6 +5,7 @@ import type { Editor } from "@tiptap/core";
 import { useTranslations } from "next-intl";
 import { ToolbarButton } from "./parts/ToolbarButton";
 import { CommunityStandardsLink } from "./CommunityStandardsLink";
+import { AddLinkPopover } from "./AddLinkPopover";
 import { BoldIcon } from "@/components/ui/icons/BoldIcon";
 import { ItalicIcon } from "@/components/ui/icons/ItalicIcon";
 import { StrikethroughIcon } from "@/components/ui/icons/StrikethroughIcon";
@@ -31,6 +32,11 @@ export function EditorToolbar({
 }: EditorToolbarProps) {
   const t = useTranslations("kudos.writeKudo");
   const [, setTick] = useState(0);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkInitial, setLinkInitial] = useState<{ text: string; url: string }>({
+    text: "",
+    url: "",
+  });
 
   // Re-render on every editor state change so isActive() is fresh.
   useEffect(() => {
@@ -52,20 +58,56 @@ export function EditorToolbar({
     fn();
   };
 
+  /**
+   * Open the Figma-style cream popover. Seeds the form from the current
+   * selection: if the cursor is inside an existing link, prefill both the
+   * href and the visible text so the user can edit either.
+   */
   const onLink = () => {
     if (!editor) return;
-    const prev = editor.getAttributes("link").href as string | undefined;
-    const url = window.prompt("URL (https://saa.sun-asterisk.com/... or /profile/...)", prev ?? "");
-    if (url === null) return; // cancelled
-    if (url.trim().length === 0) {
-      editor.chain().focus().extendMarkRange("link").unsetLink().run();
-      return;
-    }
-    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+    const prevHref =
+      (editor.getAttributes("link").href as string | undefined) ?? "";
+    const { from, to, empty } = editor.state.selection;
+    const selectedText = empty ? "" : editor.state.doc.textBetween(from, to, " ");
+    setLinkInitial({ text: selectedText, url: prevHref });
+    setLinkOpen(true);
   };
 
+  const handleLinkSave = ({ text, url }: { text: string; url: string }) => {
+    if (!editor) {
+      setLinkOpen(false);
+      return;
+    }
+    const chain = editor.chain().focus();
+    const { empty } = editor.state.selection;
+    if (empty && text.length > 0) {
+      // Cursor-only insertion with a text payload: write the text, mark it
+      // as a link, then leave the cursor at the end.
+      chain.insertContent({
+        type: "text",
+        text,
+        marks: [{ type: "link", attrs: { href: url } }],
+      });
+    } else {
+      // Either a range is selected, or no text override — keep the current
+      // selection's text and just (re)apply the link mark on that range.
+      chain.extendMarkRange("link").setLink({ href: url });
+      if (!empty && text.length > 0) {
+        chain.insertContent({
+          type: "text",
+          text,
+          marks: [{ type: "link", attrs: { href: url } }],
+        });
+      }
+    }
+    chain.run();
+    setLinkOpen(false);
+  };
+
+  const handleLinkCancel = () => setLinkOpen(false);
+
   return (
-    <div className="flex flex-row items-center w-full h-10">
+    <div className="relative flex flex-row items-center w-full h-10">
       <div
         role="group"
         aria-label={t("title")}
@@ -126,6 +168,16 @@ export function EditorToolbar({
         </ToolbarButton>
       </div>
       <CommunityStandardsLink />
+      {linkOpen ? (
+        <div className="absolute top-12 left-0 z-30">
+          <AddLinkPopover
+            initialText={linkInitial.text}
+            initialUrl={linkInitial.url}
+            onCancel={handleLinkCancel}
+            onSave={handleLinkSave}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -192,6 +192,14 @@
         "confirm": "キャンセルを確定",
         "abort": "編集を続ける"
       },
+      "addLink": {
+        "title": "リンクを追加",
+        "textLabel": "TODO: Text",
+        "urlLabel": "URL",
+        "cancel": "キャンセル",
+        "save": "保存",
+        "urlInvalid": "TODO: Invalid URL"
+      },
       "toasts": {
         "success": "Kudoを送信しました",
         "failure": "送信に失敗しました。もう一度お試しください",
